@@ -44,7 +44,6 @@ export class GoogleGuard extends AuthGuard('google') {
       const raw = req.query?.state;
       if (typeof raw === 'string') parsed = JSON.parse(raw);
     } catch {
-      // state hỏng -> nonce không khớp ở dưới
     }
 
     if (!safeEqual(parsed.nonce, cookieNonce)) {

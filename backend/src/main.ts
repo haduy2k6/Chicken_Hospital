@@ -5,7 +5,7 @@ import { AppModule } from './app.module.js';
 import { allowedOrigins, isAllowedOrigin } from './common/safe-redirect.util.js';
 
 async function bootstrap() {
-  allowedOrigins(); // fail-fast: production thiếu FRONT_ORIGINS thì dừng ngay khi khởi động
+  allowedOrigins(); 
 
   const app = await NestFactory.create(AppModule);
   const httpInstance = app.getHttpAdapter().getInstance();

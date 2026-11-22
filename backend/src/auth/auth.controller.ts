@@ -29,7 +29,6 @@ export class AuthController {
     res.clearCookie(ROLE_COOKIE, clearOptions(roleCookieOptions()));
   }
 
-  /** Chống CSRF cho các POST dùng cookie: Origin (nếu có) phải nằm trong allowlist */
   private assertTrustedOrigin(req: Request) {
     if (!isAllowedOrigin(req.headers.origin)) throw new ForbiddenException('Origin không được phép');
   }
@@ -38,7 +37,7 @@ export class AuthController {
   @UseGuards(GoogleGuard)
   async loginByGoogle() {}
 
-  /** Nonce đã được GoogleGuard xác minh; `req.oauthState` chứa locale/origin an toàn. Lỗi đăng nhập → redirect ?auth=error */
+ 
   @Get('google/callback')
   @UseFilters(GoogleCallbackFilter)
   @UseGuards(GoogleGuard)
