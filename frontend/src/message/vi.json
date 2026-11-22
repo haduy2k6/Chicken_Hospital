@@ -1,0 +1,346 @@
+{
+  "Home": {
+    "Menu": {
+      "specialties": "Chuyên khoa",
+      "cancer": "Ung bướu & Vòm họng",
+      "kidney": "Thận - Tiết niệu",
+      "cardio": "Tim mạch",
+      "doctors": "Đội ngũ bác sĩ",
+      "schedule": "Lịch khám",
+      "about": "Về chúng tôi",
+      "doctor": "Bác sĩ",
+      "patient": "Bệnh nhân",
+      "signIn": "Đăng nhập",
+      "signOut": "Đăng xuất",
+      "SignOut": "Đăng xuất",
+      "myHistory": "Lịch sử khám",
+      "doctorAccount": "Tài khoản Bác sĩ",
+      "patientAccount": "Tài khoản Bệnh nhân",
+      "doctorWorkspace": "Bàn làm việc Bác sĩ",
+      "cancerScreening": "Sàng lọc Ung thư Vòm họng",
+      "mainFeatures": "Chức năng chính"
+    },
+    "Preface": {
+      "s1Left": "Hãy yêu thương và lắng nghe bản thân mỗi ngày",
+      "s1LeftDown": "Sức khỏe của bạn bắt đầu từ những thay đổi nhỏ nhất. Hãy để chúng tôi đồng hành cùng bạn kiểm tra và chăm sóc bản thân mỗi ngày.",
+      "checkNow": "Kiểm tra ngay.",
+      "listenSelf": "Hãy lắng nghe",
+      "everyDay": "Bản thân mỗi ngày.",
+      "signUpGoogle": "Đăng ký với Google"
+    },
+    "HeroSection1": {
+      "headline": "Tất cả quy trình tầm soát sức khỏe, hoàn toàn tự động.",
+      "subheadline": "Từ phân tích hình ảnh nội soi vòm họng bằng AI đến đánh giá nguy cơ bệnh thận và kết nối bác sĩ chuyên khoa, bảo vệ sức khỏe của bạn với độ chính xác cao và tối ưu thời gian.",
+      "signUpGoogle": "Sign up with Google",
+      "signUpMicrosoft": "Sign up with Microsoft",
+      "subLink": "Đăng ký nhanh với email • Miễn phí sàng lọc ban đầu",
+      "features": {
+        "speed": {
+          "badge": "Tốc độ chẩn đoán",
+          "title": "Phân tích hình ảnh nội soi dưới 3 giây",
+          "desc": "Mô hình thị giác máy tính tự động quét các vùng niêm mạc bất thường trên ảnh soi vòm họng và trả về mức độ cảnh báo nguy cơ ngay lập tức.",
+          "learnMore": "Khám phá công nghệ →",
+          "mockName": "AI Screening Engine",
+          "mockRole": "Quét ảnh vòm họng tự động"
+        },
+        "assistant": {
+          "badge": "Trợ lý 24/7",
+          "title": "Trợ lý AI sàng lọc & theo dõi sức khỏe 24/7",
+          "desc": "Đồng hành liên tục cùng người bệnh, tự động đối chiếu các triệu chứng lâm sàng và chỉ số sinh hóa máu mà không cần thao tác thủ công phức tạp.",
+          "learnMore": "Bắt đầu sàng lọc →",
+          "mockName": "Dominic Mills",
+          "mockRole": "To: Callie, TM Triaging"
+        },
+        "records": {
+          "badge": "Bệnh án số",
+          "title": "Tự động phân loại hồ sơ & chỉ số eGFR",
+          "desc": "Tích hợp biểu đồ theo dõi chức năng lọc cầu thận và tiền sử bệnh lý theo thời gian thực, đồng bộ liền mạch giữa bệnh nhân và phòng khám.",
+          "learnMore": "Xem hồ sơ mẫu →",
+          "mockName": "Bệnh án điện tử",
+          "mockRole": "Đồng bộ đa chuyên khoa"
+        },
+        "security": {
+          "badge": "Bảo mật HIPAA",
+          "title": "Bảo mật đa tầng & Ẩn danh hóa dữ liệu",
+          "desc": "Dữ liệu hình ảnh và thông tin bệnh nhân được mã hóa đầu cuối 2 chiều, phân vùng bảo mật tuyệt đối và tuân thủ các quy chuẩn y tế nghiêm ngặt.",
+          "learnMore": "Tìm hiểu bảo mật →",
+          "mockName": "Cơ chế bảo mật",
+          "mockRole": "Mã hóa AES-256 & Ẩn danh"
+        }
+      },
+      "videoNotSupported": "Trình duyệt của bạn không hỗ trợ thẻ video."
+    },
+    "Trust": {
+      "accuracy": {
+        "title": "Độ chính xác",
+        "value": "75,53%"
+      },
+      "doctor": {
+        "title": "Bác sĩ xác nhận",
+        "value": "300+"
+      },
+      "time": {
+        "title": "Số ca đã kiểm chứng",
+        "value": "12,3k+"
+      },
+      "security": {
+        "title": "Bảo mật",
+        "value": "Mã hóa & Ẩn danh"
+      },
+      "turnaround": {
+        "title": "Thời gian trả kết quả",
+        "value": "24–48 giờ"
+      }
+    },
+    "Oncology": {
+      "badge": "Chuyên khoa Ung Bướu & Tai Mũi Họng",
+      "title": "Tầm soát & Phát hiện sớm Ung thư Vòm họng",
+      "whoReport": "Theo các báo cáo mới nhất của WHO, ung thư vòm họng (NPC) là một trong những bệnh lý ác tính chiếm tỷ lệ cao hàng đầu tại Việt Nam và Đông Nam Á nhưng thường bị phát hiện ở giai đoạn muộn.",
+      "partnership": "Bệnh viện phối hợp cùng Bộ Y tế triển khai rà soát, ứng dụng mô hình AI thị giác máy tính hỗ trợ phát hiện sớm tổn thương vòm họng qua ảnh soi với độ nhạy cao.",
+      "ctaButton": "Chẩn đoán ngay",
+      "do": "Phân tích đa vùng niêm mạc",
+      "modelTitle": "Mô hình NPC-Vision AI",
+      "modelSubtitle": "Thẩm định bởi Hội đồng chuyên môn",
+      "feature1": "Ứng dụng mô hình AI thị giác máy tính quét tự động ảnh nội soi vòm họng độ phân giải cao kết hợp điều tra dịch tễ học và tiền sử Epstein-Barr Virus (EBV).",
+      "feature2": "Phân độ theo chuẩn AJCC-8",
+      "noticeText": "Khu Vực Khám & Tiếp Nhận Ảnh Soi Vòm Họng",
+      "joinScreening": "Tham gia ngay →",
+      "stats": {
+          "late_detection": {
+            "value": "~70%",
+            "label": "Ca phát hiện muộn tại Việt Nam",
+            "description": "Dễ bị bỏ qua do triệu chứng ban đầu giống viêm mũi họng thông thường."
+          },
+          "early_survival": {
+            "value": "80% – 90%",
+            "label": "Cơ hội sống sau 5 năm",
+            "description": "Nếu được phát hiện sớm ngay từ giai đoạn khu trú ban đầu."
+          },
+          "late_survival": {
+            "value": "15% – 49%",
+            "label": "Tỷ lệ sống khi di căn xa",
+            "description": "Tiên lượng giảm mạnh, điều trị phức tạp và tốn kém hơn."
+          }
+        }
+    },
+    "Kidney": {
+      "badge": "Chuyên khoa Thận - Tiết Niệu",
+      "title": "Tầm Soát & Chăm Sóc Sức Khỏe Thận Toàn Diện",
+      "subtitle": "Ứng dụng AI phân tích nguy cơ suy thận, sỏi thận và hội chứng thận hư từ các chỉ số xét nghiệm sinh hóa và triệu chứng lâm sàng.",
+      "cards": {
+        "ckd": {
+          "name": "Suy thận mạn" },
+        "stone": {
+          "name": "Sỏi thận"  },
+        "nephrotic": {
+          "name": "Hội chứng thận hư"   },
+        "dialysis": {
+          "name": "Lọc máu & Ghép thận",
+          "tag": "Giai đoạn cuối (ESRD)",
+          "shortDesc": "Phương pháp thay thế thận suy giai đoạn cuối giúp duy trì sự sống lâu dài.",
+          "fullDesc": "Khi chức năng thận suy giảm dưới 15%, bệnh nhân cần được chuẩn bị tiếp cận lọc máu chu kỳ (chạy thận nhân tạo), lọc màng bụng hoặc đánh giá khả năng ghép thận đồng ghép.",
+          "feature1": "Lập kế hoạch chuẩn bị đường vào mạch máu (AVF) trước lọc",
+          "feature2": "Tối ưu hóa liều lọc máu và kiểm soát cân nặng khô",
+          "feature3": "Hỗ trợ kết nối ngân hàng người hiến tạng & ghép thận",
+          "mockMessage": "Hội chẩn chỉ định tạo cầu thông động tĩnh mạch AVF cẳng tay trái. Chuẩn bị phác đồ lọc máu bảo tồn kết hợp kiểm soát Kali huyết thanh."
+        }
+      }
+    },
+    "Cardiology": {
+      "badge": "Chuyên khoa Tim Mạch & Huyết Học",
+      "title": "Tầm Soát Nguy Cơ Tim Mạch & Phân Tích Điện Tâm Đồ (ECG)",
+      "subtitle": "Hệ thống AI tiên tiến phân tích nguy cơ nhồi máu cơ tim, xơ vữa động mạch, rối loạn nhịp và bệnh van tim từ các thông số huyết áp, lipid máu và biểu đồ ECG.",
+      "features": {
+        "cad": {
+          "title": "Bệnh Động Mạch Vành & Thiếu Máu Cơ Tim",
+          "desc": "Tầm soát nguy cơ hẹp tắc mạch vành, cảnh báo sớm cơn đau thắt ngực và nhồi máu cơ tim cấp qua phân tích chỉ số sinh hóa và triệu chứng khó thở khi gắng sức."
+        },
+        "arrhythmia": {
+          "title": "Rối Loạn Nhịp Tim & Rung Nhĩ",
+          "desc": "Mô hình học sâu quét tự động các dạng sóng P-QRS-T trên điện tâm đồ (ECG), phát hiện chính xác rung nhĩ, ngoại tâm thu và nguy cơ đột quỵ do huyết khối."
+        },
+        "hypertension": {
+          "title": "Tăng Huyết Áp & Suy Tim Tiến Triển",
+          "desc": "Theo dõi biến thiên huyết áp tâm thu/tâm trương, đánh giá phân suất tống máu (EF) và dự báo nguy cơ phì đại tâm thất trái."
+        }
+      },
+      "ctaButton": "Sàng lọc tim mạch ngay",
+      "stats": {
+        "cases": "45.000+ Ca phân tích ECG",
+        "speed": "Dưới 2 giây trả kết quả",
+        "verified": "Bác sĩ Tim Mạch thẩm định"
+      }
+    },
+    "Doctor": {
+      "Section4": {
+        "actionTitle": "Đội ngũ Chuyên gia & Hội đồng Chuyên môn",
+        "title": {
+          "present": "Chung lòng bảo vệ sức khỏe cộng đồng",
+          "param1": "Hội chẩn đa chuyên khoa",
+          "param2": "Chịu trách nhiệm y khoa",
+          "param3": "Ứng dụng AI chuẩn quốc tế"
+        },
+        "value": {
+          "present": "Sự kết hợp giữa chuyên môn sâu sắc của các bác sĩ đầu ngành và công nghệ AI tiên tiến.",
+          "param1": "Hội đồng y bác sĩ Tai Mũi Họng, Ung bướu và Thận Tiết niệu cùng tham gia đánh giá các ca bệnh phức tạp.",
+          "param2": "Mọi phác đồ can thiệp và chỉ định lâm sàng đều được bác sĩ chuyên khoa kiểm duyệt và ký xác nhận chính thức.",
+          "param3": "Dữ liệu và mô hình AI được kiểm định liên tục theo các tiêu chuẩn y tế quốc tế khắt khe."
+        },
+        "viewAll": "Xem tất cả danh sách bác sĩ chuyên khoa",
+        "experience": "Kinh nghiệm:",
+        "years": "{count} năm",
+        "bookAppointment": "Đặt lịch khám"
+      }
+    },
+    "Footer": {
+      "brand": {
+        "logoAlt": "Logo Chicken Guy Group",
+        "badge": "Health AI Suite",
+        "mission": "Hệ thống y tế số tiên phong ứng dụng trí tuệ nhân tạo (AI) hỗ trợ sàng lọc, phát hiện sớm ung thư vòm họng và bệnh lý thận mạn tính vì sức khỏe cộng đồng.",
+        "security": "Mã hóa bảo mật 2 chiều",
+        "withDoctors": "Đồng hành cùng Bác sĩ"
+      },
+      "patient": {
+        "title": "Bệnh Nhân",
+        "sendImage": "Gửi ảnh soi vòm họng",
+        "warningSigns": "Dấu hiệu cảnh báo sớm",
+        "photoGuide": "Hướng dẫn chụp ảnh chuẩn",
+        "anonymity": "Cam kết ẩn danh dữ liệu",
+        "schedule": "Lịch khám & Bệnh án"
+      },
+      "doctor": {
+        "title": "Bác Sĩ",
+        "caseIntake": "Cổng tiếp nhận ca bệnh",
+        "aiCompare": "Đối chiếu phân tích AI",
+        "tnm": "Phân loại TNM (AJCC-8)",
+        "consult": "Hội chẩn liên viện",
+        "team": "Đội ngũ bác sĩ",
+        "shifts": "Lịch trực & ca bệnh",
+        "nephrology": "Hội chẩn thận học",
+        "cardiology": "Hội chẩn tim mạch"
+      },
+      "support": {
+        "title": "Hỗ Trợ Khẩn",
+        "hotlineLabel": "Tổng Đài Tư Vấn Miễn Phí",
+        "hours": "Hoạt động: 07:00 - 21:00 hàng ngày",
+        "location": "Hà Nội & TP. Hồ Chí Minh"
+      },
+      "disclaimer": "<strong>Miễn trừ trách nhiệm y tế:</strong> Nền tảng công nghệ do nhóm Chicken Guy phát triển nhằm mục đích hỗ trợ nâng cao nhận thức và hỗ trợ phân loại sơ bộ. Mọi chẩn đoán xác định và phác đồ can thiệp bắt buộc phải được bác sĩ chuyên khoa Tai Mũi Họng / Ung Bướu / Thận kết luận trực tiếp.",
+      "copyright": "© {year} Chicken Guy Health AI. All rights reserved."
+    }
+  },
+  "Patient": {
+    "steps": {
+      "upload": "Hình ảnh",
+      "info": "Thông tin"
+    },
+    "dropzone": {
+      "ariaLabel": "Tải hình ảnh lên",
+      "title": "Kéo thả hình ảnh vào đây",
+      "titleDragging": "Thả hình ảnh để tải lên",
+      "hint": "hoặc bấm để chọn từ thiết bị",
+      "limit": "Chỉ nhận hình ảnh, tối đa {max}MB mỗi tệp",
+      "notImage": "{name}: không phải hình ảnh",
+      "tooLarge": "{name}: vượt quá {max}MB",
+      "selected": "Đã chọn {count} hình ảnh",
+      "clearAll": "Xóa tất cả",
+      "remove": "Xóa {name}"
+    },
+    "actions": {
+      "next": "Tiếp theo",
+      "back": "Quay lại",
+      "submit": "Gửi",
+      "submitting": "Đang gửi",
+      "error": "Gửi không thành công. Kiểm tra kết nối rồi thử lại."
+    },
+    "form": {
+      "agePlaceholder": "VD: 45",
+      "sections": {
+        "general": "Thông tin chung",
+        "risk": "Thói quen & yếu tố nguy cơ",
+        "symptoms": "Triệu chứng hiện tại"
+      },
+      "options": {
+        "yes": "Có",
+        "no": "Không",
+        "male": "Nam",
+        "female": "Nữ",
+        "low": "Ít",
+        "moderate": "Vừa",
+        "high": "Nhiều"
+      },
+      "fields": {
+        "age": "Tuổi",
+        "gender": "Giới tính",
+        "tobacco": "Hút thuốc lá",
+        "alcohol": "Uống rượu bia",
+        "betelQuid": "Nhai trầu / cau",
+        "hpv": "Nhiễm HPV",
+        "sunExposure": "Phơi nắng kéo dài",
+        "oralHygiene": "Vệ sinh răng miệng kém",
+        "familyHistory": "Gia đình có người mắc ung thư",
+        "immune": "Suy giảm miễn dịch",
+        "diet": "Ăn rau củ, trái cây",
+        "lesions": "Loét / tổn thương trong miệng",
+        "bleeding": "Chảy máu không rõ nguyên nhân",
+        "swallowing": "Khó nuốt",
+        "patches": "Mảng trắng / đỏ trong miệng"
+      }
+    },
+    "quotaUsed": "Đã dùng {used}/{max} lượt gửi hồ sơ."
+  },
+  "Auth": {
+    "close": "Đóng",
+    "title": "Đăng Nhập Hệ Thống",
+    "subtitle": "Nền tảng Y Tế AI Đa Chuyên Khoa: Ung Thư Vòm Họng, Thận & Tim Mạch",
+    "googleButton": "Đăng nhập nhanh bằng Google",
+    "encryptionNotice": "Dữ liệu y tế được mã hóa và bảo mật"
+  },
+  "DoctorDirectory": {
+    "searchPlaceholder": "Tìm theo tên bác sĩ, bệnh viện, chuyên khoa...",
+    "specialtyFilter": "Chuyên khoa:",
+    "all": "Tất cả",
+    "oncology": "Ung bướu",
+    "nephrology": "Thận - Tiết niệu",
+    "cardiology": "Tim mạch",
+    "error": "Không tải được danh sách bác sĩ. Vui lòng thử lại sau.",
+    "notFound": "Không tìm thấy bác sĩ phù hợp với tiêu chí tìm kiếm."
+  },
+  "DoctorSchedule": {
+    "workSchedule": "Lịch làm việc tuần",
+    "upcomingAppointments": "Lịch hẹn sắp tới",
+    "morning": "Sáng",
+    "afternoon": "Chiều",
+    "casesCount": "{count}/{max} ca",
+    "saveWeek": "Lưu lịch tuần này",
+    "saved": "Đã lưu.",
+    "noAppointments": "Chưa có lịch hẹn nào."
+  },
+  "AppointmentsWorkspace": {
+    "profileOf": "Hồ Sơ Của {name}",
+    "defaultPatient": "Bệnh Nhân",
+    "patientAccount": "Tài khoản bệnh nhân",
+    "usedQuota": "Đã dùng {used}/{max} lượt gửi",
+    "quotaBlocked": "Đủ lượt: hãy xác nhận chuyển tuyến hoặc chờ hoàn tất lịch hẹn để gửi hồ sơ mới.",
+    "newScreening": "Sàng Lọc Mới",
+    "upcomingTitle": "Lịch hẹn sắp tới",
+    "recordsTitle": "Hồ sơ bệnh án",
+    "confirmed": "Đã xác nhận",
+    "scheduled": "Đã hẹn",
+    "attendingDoctor": "Bác sĩ phụ trách",
+    "status": {
+      "pending": "Đang chờ bác sĩ",
+      "reviewed": "Đã có kết luận",
+      "escalated": "Cần khám chuyên khoa"
+    }
+  },
+  "BookAppointment": {
+    "openButton": "Đặt lịch tái khám",
+    "chooseDate": "Chọn ngày",
+    "close": "Đóng",
+    "searching": "Đang tìm bác sĩ đang làm việc...",
+    "noAvailable": "Không có bác sĩ nào còn lịch trống ngày này. Hãy chọn ngày khác.",
+    "morning": "Sáng (8h–11h)",
+    "afternoon": "Chiều (14h–17h)"
+  }
+}

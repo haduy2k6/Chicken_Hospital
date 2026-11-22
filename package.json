@@ -1,0 +1,23 @@
+{
+  "name": "chicken-guy-v2",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev:backend": "pnpm --dir backend start:dev",
+    "dev:frontend": "pnpm --dir frontend dev -p 3002",
+    "dev:ai": "bash -c 'cd ai-service && venv/bin/python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload'",
+    "dev": "concurrently --kill-others-on-fail --names \"backend,frontend,ai\" --prefix-colors \"blue,green,magenta\" \"pnpm dev:backend\" \"pnpm dev:frontend\" \"pnpm dev:ai\""
+  },
+  "devEngines": {
+    "packageManager": {
+      "name": "pnpm",
+      "version": "12.18.0",
+      "onFail": "download"
+    }
+  },
+  "packageManager": "pnpm@12.18.0",
+  "type": "module",
+  "devDependencies": {
+    "concurrently": "^10.0.6"
+  }
+}
