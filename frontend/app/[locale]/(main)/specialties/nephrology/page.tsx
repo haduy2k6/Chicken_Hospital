@@ -1,4 +1,5 @@
-import { NephrologyIntakeForm } from "@/components/NephrologyIntakeForm.client";
+
+import NephrologyIntakeForm from "@/components/NephrologyIntakeForm.client";
 import { Sparkles, Activity, ShieldCheck, Stethoscope } from "lucide-react";
 
 export default function NephrologySpecialtyPage() {
@@ -7,7 +8,7 @@ export default function NephrologySpecialtyPage() {
       <div className="w-full max-w-4xl text-center space-y-3 mb-10">
         <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-cyan-100 border border-cyan-200 text-cyan-900 text-xs font-extrabold uppercase tracking-widest shadow-xs">
           <Sparkles className="w-3.5 h-3.5 text-cyan-600" />
-          <span>Chuyên khoa Thận - Tiết Niệu</span>
+        
         </div>
 
         <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black text-stone-900 tracking-tight">
