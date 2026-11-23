@@ -36,10 +36,8 @@ function base(): CookieOptions {
 
 export const refreshCookieOptions = (): CookieOptions => ({ ...base(), httpOnly: true, maxAge: REFRESH_TTL_MS });
 
-/** Chỉ là gợi ý cho UI/middleware, KHÔNG dùng để phân quyền (quyền luôn lấy từ DB ở server) */
 export const roleCookieOptions = (): CookieOptions => ({ ...base(), httpOnly: false, maxAge: REFRESH_TTL_MS });
 
-/** Cookie nonce OAuth: luôn Lax vì callback của Google là điều hướng top-level GET */
 export const stateCookieOptions = (): CookieOptions => ({
   httpOnly: true,
   secure: process.env.NODE_ENV === 'production',
@@ -49,7 +47,6 @@ export const stateCookieOptions = (): CookieOptions => ({
   ...domainOption(),
 });
 
-/** clearCookie phải dùng đúng sameSite/secure/domain lúc set */
 export const clearOptions = (opts: CookieOptions): CookieOptions => {
   const { maxAge: _m, expires: _e, ...rest } = opts;
   return rest;

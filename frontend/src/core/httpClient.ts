@@ -73,7 +73,6 @@ export class HttpClient {
       headers: { "Content-Type": "application/json" },
     });
 
-    // rawClient không có interceptor: dùng cho refresh/logout để không lặp vô hạn
     this.rawClient = axios.create({
       baseURL: API_ROUTES.BASE_URL,
       timeout: 15000,
@@ -89,7 +88,6 @@ export class HttpClient {
     this.onSessionExpired = handler;
   }
 
-  /** Làm mới session từ cookie refresh. Web Locks bảo đảm chỉ một tab gọi cùng lúc, các tab khác dùng lại kết quả trong 5 giây. */
   public async refreshSession(): Promise<Session | null> {
     if (this.activeRefreshPromise) return this.activeRefreshPromise;
 

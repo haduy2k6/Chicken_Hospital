@@ -4,7 +4,7 @@ let cached: string[] | undefined;
 export function allowedOrigins(): string[] {
   if (cached) return cached;
 
-  const list = (process.env.FRONT ?? '')
+  const list = (process.env.FRONT_ORIGINS ?? process.env.FRONT ?? '')
     .split(',')
     .map((s) => s.trim().replace(/\/$/, ''))
     .filter(Boolean);

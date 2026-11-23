@@ -7,8 +7,18 @@ const ALWAYS = [
   'S3_BUCKET', 'S3_ACCESS_KEY', 'S3_SECRET_KEY',
   'UPSTASH_REDIS_REST_URL', 'UPSTASH_REDIS_REST_TOKEN',
 ];
-const PRODUCTION_ONLY = ['FRONT_ORIGINS', 'AI_SERVICE_URL', 'AI_CALLBACK_URL', 'AI_SERVICE_KEY', 'AI_CALLBACK_SECRET'];
+const PRODUCTION_ONLY = ['FRONT_ORIGINS', 'AI_SERVICE_URL', 'AI_SERVICE_KEY', 'AI_CALLBACK_SECRET'];
 const MIN_SECRET_LENGTH = 32;
+
+function isHttpUrl(value: unknown): boolean {
+  if (typeof value !== 'string') return false;
+  try {
+    const url = new URL(value);
+    return (url.protocol === 'http:' || url.protocol === 'https:') && !!url.hostname;
+  } catch {
+    return false;
+  }
+}
 
 export function validateEnv(config: Record<string, unknown>): Record<string, unknown> {
   const production = config.NODE_ENV === 'production';
@@ -18,7 +28,7 @@ export function validateEnv(config: Record<string, unknown>): Record<string, unk
   const errors = missing.length ? [`Thiếu biến môi trường: ${missing.join(', ')}`] : [];
 
   if (production && !missing.length) {
-    for (const k of ['ACCESS_TOKEN_SECRET', 'REFRESH_TOKEN_SECRET']) {
+    for (const k of ['ACCESS_TOKEN_SECRET', 'REFRESH_TOKEN_SECRET', 'AI_SERVICE_KEY', 'AI_CALLBACK_SECRET']) {
       if ((config[k] as string).length < MIN_SECRET_LENGTH) errors.push(`${k} phải dài ít nhất ${MIN_SECRET_LENGTH} ký tự`);
     }
     if (config.ACCESS_TOKEN_SECRET === config.REFRESH_TOKEN_SECRET) {
@@ -26,6 +36,10 @@ export function validateEnv(config: Record<string, unknown>): Record<string, unk
     }
     if (config.AI_SERVICE_KEY === config.AI_CALLBACK_SECRET) {
       errors.push('AI_SERVICE_KEY và AI_CALLBACK_SECRET phải khác nhau (hai chiều dùng hai bí mật riêng)');
+    }
+    if (!isHttpUrl(config.AI_SERVICE_URL)) errors.push('AI_SERVICE_URL phải là URL HTTP(S) hợp lệ');
+    for (const origin of String(config.FRONT_ORIGINS).split(',').map((value) => value.trim()).filter(Boolean)) {
+      if (!isHttpUrl(origin)) errors.push(`FRONT_ORIGINS chứa URL không hợp lệ: ${origin}`);
     }
   }
 

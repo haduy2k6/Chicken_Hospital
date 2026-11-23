@@ -43,7 +43,6 @@ const RECONCILE_BATCH = 50;
 export class AiAnalysisService {
   private readonly logger = new Logger(AiAnalysisService.name);
   private readonly baseUrl: string | undefined;
-  private readonly callbackUrl: string | undefined;
   private readonly apiKey: string | undefined;
   private readonly submitTimeoutMs: number;
   private reconciling = false;
@@ -55,26 +54,24 @@ export class AiAnalysisService {
     private readonly storage: StorageService,
   ) {
     this.baseUrl = config.get<string>('AI_SERVICE_URL')?.replace(/\/$/, '');
-    this.callbackUrl = config.get<string>('AI_CALLBACK_URL'); // vd https://api.x.com/internal/ai/result
     this.apiKey = config.get<string>('AI_SERVICE_KEY');
     this.submitTimeoutMs = Number(config.get('AI_SUBMIT_TIMEOUT_MS') ?? 10_000);
   }
 
-  // ------------------------------------------------------------ gửi job
-
-  /** Không chặn request, không ném lỗi ra ngoài. Mất job do khởi động lại không sao: reconcile() gửi lại từ DB. */
   submit(jobs: AnalysisJob[]): void {
+    if (jobs.length) this.logger.log(`Xếp ${jobs.length} job AI để gửi`);
     void (async () => {
       for (const job of jobs) await this.submitOne(job);
     })().catch((err) => this.logger.error(`submit() lỗi không mong đợi: ${(err as Error).message}`));
   }
 
   private async submitOne(job: AnalysisJob): Promise<void> {
-    if (!this.baseUrl || !this.callbackUrl || !this.apiKey) {
-      await this.markFailed(job.analysisId, 'AI_SERVICE_URL / AI_CALLBACK_URL / AI_SERVICE_KEY chưa được cấu hình');
+    if (!this.baseUrl || !this.apiKey) {
+      await this.markFailed(job.analysisId, 'AI_SERVICE_URL / AI_SERVICE_KEY chưa được cấu hình');
       return;
     }
     try {
+      this.logger.log(`Gửi job AI ${job.analysisId} đến ${this.baseUrl}/jobs`);
       const res = await fetch(`${this.baseUrl}/jobs`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-AI-Key': this.apiKey },
@@ -84,10 +81,10 @@ export class AiAnalysisService {
           image_key: job.imageKey,
           mime_type: job.mimeType,
           gradcam_key: gradcamKeyFor(job.caseId, job.analysisId),
-          callback_url: this.callbackUrl,
         }),
         signal: AbortSignal.timeout(this.submitTimeoutMs),
       });
+      this.logger.log(`AI phản hồi job ${job.analysisId}: HTTP ${res.status}`);
       // 4xx (trừ 408/429) là lỗi vĩnh viễn của job: gửi lại cũng vô ích
       if (res.status >= 400 && res.status < 500 && res.status !== 408 && res.status !== 429) {
         await this.markFailed(job.analysisId, `Dịch vụ AI từ chối job (${res.status})`);

@@ -8,7 +8,6 @@ import { IsIn, IsNumber, IsObject, IsOptional, IsString, IsUUID, Max, MaxLength,
 import { safeEqual } from '../common/auth-cookie.util.js';
 import { AiAnalysisService } from './ai-analysis.service.js';
 
-/** Bí mật riêng cho chiều FastAPI -> Nest (khác AI_SERVICE_KEY của chiều Nest -> FastAPI) */
 @Injectable()
 export class AiCallbackGuard implements CanActivate {
   private readonly secret: string | undefined;
@@ -40,7 +39,6 @@ export class AiResultDto {
   @IsOptional() @IsString() @MaxLength(1000) error_message?: string;
 }
 
-/** Chỉ cho FastAPI gọi (nên chặn thêm bằng mạng riêng / IP allowlist ở tầng hạ tầng). Đã có khóa bí mật nên bỏ giới hạn tần suất. */
 @Controller('internal/ai')
 @SkipThrottle()
 @UseGuards(AiCallbackGuard)
