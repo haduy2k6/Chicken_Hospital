@@ -38,7 +38,7 @@ export class AiAnalysis {
   @JoinColumn({ name: 'image_id' })
   image: Relation<CaseImage>;
 
-  @Column({ type: 'enum', enum: AnalysisStatus, default: AnalysisStatus.PENDING })
+  @Column({ type: 'varchar', length: 30, default: AnalysisStatus.PENDING })
   status: AnalysisStatus;
 
   @Column({ type: 'timestamptz', name: 'dispatched_at', nullable: true })

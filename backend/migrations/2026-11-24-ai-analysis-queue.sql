@@ -1,9 +1,13 @@
--- Migration: Thêm trạng thái và trường quản lý hàng đợi cho ai_analyses
+-- Migration: Chuyển status sang VARCHAR(30) và thêm các trường quản lý hàng đợi
 DO $$
 BEGIN
-  IF EXISTS (SELECT 1 FROM pg_type WHERE typname = 'ai_analyses_status_enum') THEN
-    ALTER TYPE "ai_analyses_status_enum" ADD VALUE IF NOT EXISTS 'pending';
-    ALTER TYPE "ai_analyses_status_enum" ADD VALUE IF NOT EXISTS 'dispatched';
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns 
+    WHERE table_name = 'ai_analyses' AND column_name = 'status' AND data_type = 'USER-DEFINED'
+  ) THEN
+    ALTER TABLE "ai_analyses" ALTER COLUMN "status" DROP DEFAULT;
+    ALTER TABLE "ai_analyses" ALTER COLUMN "status" TYPE VARCHAR(30) USING "status"::text;
+    ALTER TABLE "ai_analyses" ALTER COLUMN "status" SET DEFAULT 'pending';
   END IF;
 END$$;
 

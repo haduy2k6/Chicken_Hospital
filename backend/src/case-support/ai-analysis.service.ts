@@ -1,5 +1,4 @@
-// src/case-support/ai-analysis.service.ts
-import { Inject, Injectable, Logger } from '@nestjs/common';
+import { Inject, Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Cron } from '@nestjs/schedule';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -54,7 +53,7 @@ const REDIS_CB_FAILURES_KEY = 'ai:circuit:failures';
 type CircuitState = 'CLOSED' | 'OPEN' | 'HALF_OPEN';
 
 @Injectable()
-export class AiAnalysisService {
+export class AiAnalysisService implements OnModuleInit {
   private readonly logger = new Logger(AiAnalysisService.name);
   private readonly baseUrl: string | undefined;
   private readonly apiKey: string | undefined;
@@ -80,6 +79,41 @@ export class AiAnalysisService {
     this.baseUrl = config.get<string>('AI_SERVICE_URL')?.replace(/\/$/, '');
     this.apiKey = config.get<string>('AI_SERVICE_KEY');
     this.submitTimeoutMs = Number(config.get('AI_SUBMIT_TIMEOUT_MS') ?? 25_000);
+  }
+
+  async onModuleInit(): Promise<void> {
+    await this.ensureSchema();
+  }
+
+  private async ensureSchema(): Promise<void> {
+    try {
+      this.logger.log('Đang kiểm tra và đồng bộ schema cho bảng ai_analyses...');
+      // 1. Chuyển status từ enum sang varchar nếu đang là enum
+      await this.dataSource.query(`
+        DO $$
+        BEGIN
+          IF EXISTS (
+            SELECT 1 FROM information_schema.columns 
+            WHERE table_name = 'ai_analyses' AND column_name = 'status' AND data_type = 'USER-DEFINED'
+          ) THEN
+            ALTER TABLE "ai_analyses" ALTER COLUMN "status" DROP DEFAULT;
+            ALTER TABLE "ai_analyses" ALTER COLUMN "status" TYPE VARCHAR(30) USING "status"::text;
+            ALTER TABLE "ai_analyses" ALTER COLUMN "status" SET DEFAULT 'pending';
+          END IF;
+        END$$;
+      `);
+
+      // 2. Thêm cột dispatched_at và retry_count nếu chưa có
+      await this.dataSource.query(`
+        ALTER TABLE "ai_analyses" 
+          ADD COLUMN IF NOT EXISTS "dispatched_at" TIMESTAMPTZ,
+          ADD COLUMN IF NOT EXISTS "retry_count" INT NOT NULL DEFAULT 0;
+      `);
+
+      this.logger.log('Đồng bộ schema bảng ai_analyses thành công.');
+    } catch (err) {
+      this.logger.warn(`Không thể tự động đồng bộ schema ai_analyses: ${(err as Error).message}`);
+    }
   }
 
   // ------------------------------------------------------------ Redis helpers với graceful fallback
