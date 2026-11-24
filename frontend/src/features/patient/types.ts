@@ -50,7 +50,7 @@ export interface PatientHistoryItem {
   appointment: PatientHistoryAppointment | null;
   results: Array<{
     imageUrl: string;
-    status: "processing" | "completed" | "failed" | null;
+    status: "pending" | "dispatched" | "processing" | "completed" | "failed" | null;
     riskScore: number | null;
     predictedLabel: string | null;
     gradcamUrl: string | null;

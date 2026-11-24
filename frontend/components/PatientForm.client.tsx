@@ -39,20 +39,27 @@ const SECTIONS: { key: string; fields: Field[] }[] = [
 
 export const PATIENT_FORM_ID = "patient-form";
 
-export function PatientForm({ onSubmit }: { onSubmit: (values: Record<string, string>) => void }) {
+export function PatientForm({
+  onSubmit,
+  disabled,
+}: {
+  onSubmit: (values: Record<string, string>) => void;
+  disabled?: boolean;
+}) {
   const t = useTranslations("Patient.form");
 
   return (
     <form
       id={PATIENT_FORM_ID}
-      className="flex w-full flex-col gap-4"
+      className={`flex w-full flex-col gap-4 ${disabled ? "opacity-60 pointer-events-none" : ""}`}
       onSubmit={(e) => {
         e.preventDefault();
+        if (disabled) return;
         onSubmit(Object.fromEntries(new FormData(e.currentTarget)) as Record<string, string>);
       }}
     >
       {SECTIONS.map(({ key, fields }) => (
-        <fieldset key={key} className="rounded-xl bg-amber-50 px-4 pb-4 pt-2 ring-1 ring-amber-900/10">
+        <fieldset key={key} disabled={disabled} className="rounded-xl bg-amber-50 px-4 pb-4 pt-2 ring-1 ring-amber-900/10">
           <legend className="px-2 text-sm font-semibold text-red-900">{t(`sections.${key}`)}</legend>
 
           <div className="grid grid-cols-1 gap-x-5 gap-y-4 sm:grid-cols-2">

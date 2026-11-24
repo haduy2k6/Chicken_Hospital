@@ -21,7 +21,11 @@ const QUEUE_LIMIT = 100;
 
 type AiStatus = 'processing' | 'completed' | 'failed';
 const aiStatusOf = (s: AnalysisStatus[]): AiStatus =>
-  s.includes(AnalysisStatus.PROCESSING) ? 'processing' : !s.length || s.includes(AnalysisStatus.COMPLETED) ? 'completed' : 'failed';
+  s.some((st) => st === AnalysisStatus.PROCESSING || st === AnalysisStatus.PENDING || st === AnalysisStatus.DISPATCHED)
+    ? 'processing'
+    : !s.length || s.includes(AnalysisStatus.COMPLETED)
+      ? 'completed'
+      : 'failed';
 
 const conflict = (message: string, code: string) => new ConflictException({ message, code });
 

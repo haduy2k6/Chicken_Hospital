@@ -3,7 +3,7 @@ import 'multer';
 import { randomUUID } from 'crypto';
 import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { DataSource, EntityManager } from 'typeorm';
-import { AiAnalysis } from '../Entity-User/AiAnalysis.entity.js';
+import { AiAnalysis, AnalysisStatus } from '../Entity-User/AiAnalysis.entity.js';
 import { Appointment, AppointmentStatus } from '../Entity-User/Appointment.entity.js';
 import { CaseImage } from '../Entity-User/CaseImage.entity.js';
 import { CaseStatus, MedicalCase } from '../Entity-User/MedicalCase.entity.js';
@@ -168,7 +168,18 @@ export class PatientService {
             }),
           ),
         );
-        const analyses = def.aiEnabled ? await m.save(images.map((i) => m.create(AiAnalysis, { caseId, imageId: i.id }))) : [];
+        const analyses = def.aiEnabled
+          ? await m.save(
+              images.map((i) =>
+                m.create(AiAnalysis, {
+                  caseId,
+                  imageId: i.id,
+                  status: AnalysisStatus.PENDING,
+                  retryCount: 0,
+                }),
+              ),
+            )
+          : [];
         await this.audit.log({ actorUserId: userId, action: 'case.created', entityType: 'case', entityId: caseId }, m);
 
         return {

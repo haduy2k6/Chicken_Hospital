@@ -201,7 +201,24 @@ function CaseCard({ item, statusMeta, eviction }: { item: PatientHistoryItem; st
                       {result.riskScore !== null && <p>Điểm mô hình: {result.riskScore.toFixed(1)}%</p>}
                       {result.gradcamUrl && <a href={result.gradcamUrl} target="_blank" rel="noreferrer" className="text-cyan-800 underline">Xem vùng AI chú ý</a>}
                     </>
-                  ) : <p>{result.status === "failed" ? "Phân tích ảnh thất bại" : "Đang phân tích ảnh"}</p>}
+                  ) : (
+                    <div className="flex items-center gap-1.5 font-medium">
+                      {result.status === "failed" ? (
+                        <p className="text-red-600">Phân tích ảnh thất bại</p>
+                      ) : (
+                        <p className="flex items-center gap-1.5 text-amber-700">
+                          <Loader2 className="w-3 h-3 animate-spin" />
+                          <span>
+                            {result.status === "pending"
+                              ? "Đang trong hàng đợi gửi..."
+                              : result.status === "dispatched"
+                                ? "AI đang xử lý ảnh..."
+                                : "Đang phân tích ảnh..."}
+                          </span>
+                        </p>
+                      )}
+                    </div>
+                  )}
                   <p className="mt-1 text-[10px] text-stone-400">Điểm model không phải xác suất mắc bệnh; bác sĩ cần tự đánh giá và kết luận.</p>
                 </div>
               </div>

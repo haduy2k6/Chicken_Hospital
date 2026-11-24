@@ -28,7 +28,14 @@ export function usePatientHistoryQuery() {
     enabled,
     staleTime: 30 * 1000,
     refetchInterval: (query) =>
-      query.state.data?.items.some((item) => item.results.some((result) => result.status === "processing"))
+      query.state.data?.items.some((item) =>
+        item.results.some(
+          (result) =>
+            result.status === "processing" ||
+            result.status === "pending" ||
+            result.status === "dispatched"
+        )
+      )
         ? 5_000
         : false,
   });

@@ -9,7 +9,7 @@ import { useAuthStore } from "@/src/stores/authStore";
 const MAX_MB = 4;
 const MAX_SIZE = MAX_MB * 1024 * 1024;
 
-export function DropZone() {
+export function DropZone({ disabled }: { disabled?: boolean } = {}) {
   const t = useTranslations("Patient.dropzone");
   const user = useAuthStore((s) => s.user);
   const userId = user?.userId || "guest";
@@ -44,44 +44,50 @@ export function DropZone() {
   return (
     <div className="flex w-full flex-col gap-4">
       <div
-        role="button"
-        tabIndex={0}
+        role={disabled ? "region" : "button"}
+        tabIndex={disabled ? -1 : 0}
         aria-label={t("ariaLabel")}
-        onClick={() => inputRef.current?.click()}
+        onClick={() => !disabled && inputRef.current?.click()}
         onKeyDown={(e) => {
+          if (disabled) return;
           if (e.key === "Enter" || e.key === " ") {
             e.preventDefault();
             inputRef.current?.click();
           }
         }}
         onDragOver={(e) => {
+          if (disabled) return;
           e.preventDefault();
           setDragging(true);
         }}
         onDragLeave={(e) => {
+          if (disabled) return;
           e.preventDefault();
           if (!e.currentTarget.contains(e.relatedTarget as Node)) setDragging(false);
         }}
         onDrop={(e) => {
+          if (disabled) return;
           e.preventDefault();
           setDragging(false);
           if (e.dataTransfer.files.length) handleFiles(e.dataTransfer.files);
         }}
-        className={`flex cursor-pointer flex-col items-center gap-2 rounded-xl border-2 border-dashed px-6 py-10 text-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-800 focus-visible:ring-offset-2 ${
-          dragging
-            ? "border-red-800 bg-amber-200"
-            : "border-amber-700/50 bg-amber-50 hover:border-amber-700 hover:bg-orange-100"
+        className={`flex flex-col items-center gap-2 rounded-xl border-2 border-dashed px-6 py-10 text-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-800 focus-visible:ring-offset-2 ${
+          disabled
+            ? "border-amber-700/20 bg-amber-50/40 opacity-60 cursor-not-allowed pointer-events-none"
+            : dragging
+              ? "cursor-pointer border-red-800 bg-amber-200"
+              : "cursor-pointer border-amber-700/50 bg-amber-50 hover:border-amber-700 hover:bg-orange-100"
         }`}
       >
         <span
           className={`flex h-12 w-12 items-center justify-center rounded-full transition-colors ${
-            dragging ? "bg-red-800 text-amber-50" : "bg-orange-200 text-red-800"
+            disabled ? "bg-stone-200 text-stone-500" : dragging ? "bg-red-800 text-amber-50" : "bg-orange-200 text-red-800"
           }`}
         >
           <CloudBackup size={24} />
         </span>
         <span className="font-medium text-amber-950">
-          {dragging ? t("titleDragging") : t("title")}
+          {disabled ? "Chức năng tạm khóa - Đang chờ kết quả chẩn đoán trước" : dragging ? t("titleDragging") : t("title")}
         </span>
         <span className="text-sm text-amber-900/70">{t("hint")}</span>
         <span className="text-xs text-amber-900/60">{t("limit", { max: MAX_MB })}</span>
@@ -91,6 +97,7 @@ export function DropZone() {
           accept="image/*"
           multiple
           hidden
+          disabled={disabled}
           onChange={(e) => {
             if (e.target.files?.length) handleFiles(e.target.files);
             e.target.value = "";
