@@ -303,6 +303,8 @@ export class AiAnalysisService {
           // Giãn nhịp (pacing) 2s để CPU/RAM của tiến trình AI kịp xử lý
           await new Promise((resolve) => setTimeout(resolve, PACING_DELAY_MS));
         } else if (result.type === 'circuit_trip') {
+          this.inMemoryQueue.unshift(job.analysisId);
+          await this.redisPush(REDIS_QUEUE_KEY, job.analysisId);
           await this.tripCircuitBreaker(result.error ?? 'Lỗi kết nối / 503');
           break; // Mạch đã mở, dừng chuỗi gửi
         } else if (result.type === 'fatal') {

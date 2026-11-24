@@ -33,14 +33,19 @@ export function UploadStep() {
   const { data: historyData } = usePatientHistoryQuery();
   const [error, setError] = useState<string | null>(null);
 
-  // Kiểm tra xem bệnh nhân có hồ sơ ung bướu đang chờ kết quả AI hoặc bác sĩ hay không
+  // Chỉ khóa khi có hồ sơ ung bướu mà AI đang trong quá trình phân tích (chưa có kết quả)
   const hasPendingDiagnosis = useMemo(() => {
     if (!historyData?.items) return false;
     return historyData.items.some((item) => {
-      const isAiPending = item.results.some(
-        (r) => !r.status || r.status === "pending" || r.status === "dispatched" || r.status === "processing",
+      // Chỉ xét ca ung bướu chưa được bác sĩ khám xong
+      if (item.specialtyCode !== SPECIALTY || item.status !== "pending") return false;
+      // Nếu chưa có kết quả nào hoặc có ảnh AI đang trong tiến trình phân tích
+      return (
+        item.results.length === 0 ||
+        item.results.some(
+          (r) => !r.status || r.status === "pending" || r.status === "dispatched" || r.status === "processing",
+        )
       );
-      return isAiPending || (item.specialtyCode === SPECIALTY && item.status === "pending");
     });
   }, [historyData?.items]);
 
