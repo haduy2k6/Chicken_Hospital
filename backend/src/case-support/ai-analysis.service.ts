@@ -1,8 +1,9 @@
-import { Inject, Injectable, Logger, OnModuleInit } from '@nestjs/common';
+// src/case-support/ai-analysis.service.ts
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Cron } from '@nestjs/schedule';
 import { InjectRepository } from '@nestjs/typeorm';
-import { DataSource, In, LessThan, MoreThanOrEqual, Repository } from 'typeorm';
+import { DataSource, In, LessThan, Repository } from 'typeorm';
 import { Redis } from '@upstash/redis';
 import { AiAnalysis, AnalysisStatus } from '../Entity-User/AiAnalysis.entity.js';
 import { UPSTASH_REDIS } from '../redis/redis.provider.js';
@@ -36,6 +37,16 @@ export interface AiResult {
   error_message?: string;
 }
 
+interface RedisJobMeta {
+  analysisId: string;
+  caseId: string;
+  imageKey: string;
+  mimeType: string;
+  subStatus: 'pending' | 'dispatched';
+  dispatchedAt: number | null;
+  retryCount: number;
+}
+
 const RESUBMIT_COOLDOWN_MS = 3 * 60 * 1000; // 3 phút cooldown trước khi gửi lại job đã dispatched
 const MAX_RETRY = 3; // Tối đa 3 lần retry
 const FAIL_AFTER_MS = 30 * 60 * 1000; // Quá 30 phút không xong thì đánh dấu FAILED
@@ -49,11 +60,12 @@ const REDIS_LOCK_KEY = 'ai:lock:dispatcher';
 const REDIS_CB_STATE_KEY = 'ai:circuit:state';
 const REDIS_CB_OPEN_UNTIL_KEY = 'ai:circuit:open_until';
 const REDIS_CB_FAILURES_KEY = 'ai:circuit:failures';
+const REDIS_JOB_PREFIX = 'ai:job:';
 
 type CircuitState = 'CLOSED' | 'OPEN' | 'HALF_OPEN';
 
 @Injectable()
-export class AiAnalysisService implements OnModuleInit {
+export class AiAnalysisService {
   private readonly logger = new Logger(AiAnalysisService.name);
   private readonly baseUrl: string | undefined;
   private readonly apiKey: string | undefined;
@@ -66,7 +78,8 @@ export class AiAnalysisService implements OnModuleInit {
 
   // Worker lock & in-memory queue fallback
   private isWorkerActive = false;
-  private inMemoryQueue: AnalysisJob[] = [];
+  private inMemoryQueue: string[] = [];
+  private inMemoryJobMeta = new Map<string, RedisJobMeta>();
   private reconciling = false;
 
   constructor(
@@ -79,41 +92,6 @@ export class AiAnalysisService implements OnModuleInit {
     this.baseUrl = config.get<string>('AI_SERVICE_URL')?.replace(/\/$/, '');
     this.apiKey = config.get<string>('AI_SERVICE_KEY');
     this.submitTimeoutMs = Number(config.get('AI_SUBMIT_TIMEOUT_MS') ?? 25_000);
-  }
-
-  async onModuleInit(): Promise<void> {
-    await this.ensureSchema();
-  }
-
-  private async ensureSchema(): Promise<void> {
-    try {
-      this.logger.log('Đang kiểm tra và đồng bộ schema cho bảng ai_analyses...');
-      // 1. Chuyển status từ enum sang varchar nếu đang là enum
-      await this.dataSource.query(`
-        DO $$
-        BEGIN
-          IF EXISTS (
-            SELECT 1 FROM information_schema.columns 
-            WHERE table_name = 'ai_analyses' AND column_name = 'status' AND data_type = 'USER-DEFINED'
-          ) THEN
-            ALTER TABLE "ai_analyses" ALTER COLUMN "status" DROP DEFAULT;
-            ALTER TABLE "ai_analyses" ALTER COLUMN "status" TYPE VARCHAR(30) USING "status"::text;
-            ALTER TABLE "ai_analyses" ALTER COLUMN "status" SET DEFAULT 'pending';
-          END IF;
-        END$$;
-      `);
-
-      // 2. Thêm cột dispatched_at và retry_count nếu chưa có
-      await this.dataSource.query(`
-        ALTER TABLE "ai_analyses" 
-          ADD COLUMN IF NOT EXISTS "dispatched_at" TIMESTAMPTZ,
-          ADD COLUMN IF NOT EXISTS "retry_count" INT NOT NULL DEFAULT 0;
-      `);
-
-      this.logger.log('Đồng bộ schema bảng ai_analyses thành công.');
-    } catch (err) {
-      this.logger.warn(`Không thể tự động đồng bộ schema ai_analyses: ${(err as Error).message}`);
-    }
   }
 
   // ------------------------------------------------------------ Redis helpers với graceful fallback
@@ -140,8 +118,7 @@ export class AiAnalysisService implements OnModuleInit {
       const res = await this.redis.set(key, '1', { nx: true, ex: ttlSeconds });
       return res === 'OK';
     } catch {
-      // Fallback: cho phép chạy đơn tiến trình tại instance hiện hành
-      return true;
+      return true; // Cho phép chạy fallback nội bộ
     }
   }
 
@@ -150,6 +127,34 @@ export class AiAnalysisService implements OnModuleInit {
       await this.redis.del(key);
     } catch {
       /* Khóa tự hết hạn qua TTL */
+    }
+  }
+
+  private async getJobMeta(analysisId: string): Promise<RedisJobMeta | null> {
+    try {
+      const raw = await this.redis.get<string>(`${REDIS_JOB_PREFIX}${analysisId}`);
+      if (raw) return typeof raw === 'string' ? JSON.parse(raw) : (raw as RedisJobMeta);
+    } catch {
+      /* Fallback to memory */
+    }
+    return this.inMemoryJobMeta.get(analysisId) ?? null;
+  }
+
+  private async saveJobMeta(analysisId: string, meta: RedisJobMeta): Promise<void> {
+    this.inMemoryJobMeta.set(analysisId, meta);
+    try {
+      await this.redis.set(`${REDIS_JOB_PREFIX}${analysisId}`, JSON.stringify(meta), { ex: 86400 });
+    } catch {
+      /* Bỏ qua lỗi Redis */
+    }
+  }
+
+  private async deleteJobMeta(analysisId: string): Promise<void> {
+    this.inMemoryJobMeta.delete(analysisId);
+    try {
+      await this.redis.del(`${REDIS_JOB_PREFIX}${analysisId}`);
+    } catch {
+      /* Bỏ qua lỗi Redis */
     }
   }
 
@@ -172,7 +177,6 @@ export class AiAnalysisService implements OnModuleInit {
       if (now < this.cbOpenUntil) {
         return true;
       }
-      // Hết thời gian nghỉ -> chuyển sang HALF_OPEN để thăm dò
       this.cbState = 'HALF_OPEN';
       void this.syncCircuitState('HALF_OPEN', 0, this.cbFailures);
       this.logger.log('Circuit Breaker chuyển sang HALF-OPEN. Sẽ kiểm tra GET /health trước khi gửi job.');
@@ -243,12 +247,21 @@ export class AiAnalysisService implements OnModuleInit {
 
   submit(jobs: AnalysisJob[]): void {
     if (!jobs.length) return;
-    this.logger.log(`Xếp ${jobs.length} job AI vào hàng đợi tuần tự`);
+    this.logger.log(`Xếp ${jobs.length} job AI vào hàng đợi tuần tự Redis`);
 
     void (async () => {
       for (const job of jobs) {
-        this.inMemoryQueue.push(job);
-        await this.redisPush(REDIS_QUEUE_KEY, JSON.stringify(job));
+        await this.saveJobMeta(job.analysisId, {
+          analysisId: job.analysisId,
+          caseId: job.caseId,
+          imageKey: job.imageKey,
+          mimeType: job.mimeType,
+          subStatus: 'pending',
+          dispatchedAt: null,
+          retryCount: 0,
+        });
+        this.inMemoryQueue.push(job.analysisId);
+        await this.redisPush(REDIS_QUEUE_KEY, job.analysisId);
       }
       await this.triggerWorker();
     })().catch((err) => this.logger.error(`submit() lỗi: ${(err as Error).message}`));
@@ -265,7 +278,7 @@ export class AiAnalysisService implements OnModuleInit {
       while (true) {
         // 1. Kiểm tra Circuit Breaker
         if (await this.isCircuitOpen()) {
-          this.logger.log('Circuit Breaker đang MỞ (OPEN). Tạm ngừng điều phối job AI.');
+          this.logger.log('Circuit Breaker đang MỞ (OPEN). Tạm dừng gửi job AI.');
           break;
         }
 
@@ -278,22 +291,22 @@ export class AiAnalysisService implements OnModuleInit {
           }
         }
 
-        // 3. Lấy 1 job đủ điều kiện
+        // 3. Lấy 1 job đủ điều kiện từ Redis queue hoặc DB
         const job = await this.getNextJob();
-        if (!job) break; // Hàng đợi trống
+        if (!job) break; // Hết job cần gửi
 
-        // 4. Gửi tuần tự 1 job
+        // 4. Gửi tuần tự duy nhất 1 job sang AI Service
         const result = await this.dispatchOne(job);
 
         if (result.type === 'accepted') {
           await this.onDispatchSuccess();
-          // Giãn nhịp (pacing) 2s để CPU/RAM của tiến trình AI hạ nhiệt
+          // Giãn nhịp (pacing) 2s để CPU/RAM của tiến trình AI kịp xử lý
           await new Promise((resolve) => setTimeout(resolve, PACING_DELAY_MS));
         } else if (result.type === 'circuit_trip') {
           await this.tripCircuitBreaker(result.error ?? 'Lỗi kết nối / 503');
-          break; // Mạch đã mở, dừng vòng lặp gửi
+          break; // Mạch đã mở, dừng chuỗi gửi
         } else if (result.type === 'fatal') {
-          // Lỗi 4xx vĩnh viễn đã được đánh dấu failed, chờ nhẹ rồi tiếp tục
+          // Lỗi vĩnh viễn 4xx đã được đánh dấu FAILED trong DB
           await new Promise((resolve) => setTimeout(resolve, 1000));
         }
       }
@@ -306,63 +319,88 @@ export class AiAnalysisService implements OnModuleInit {
   }
 
   private async getNextJob(): Promise<AnalysisJob | null> {
-    // Ưu tiên 1: Lấy từ Redis queue
-    const popped = await this.redisPop(REDIS_QUEUE_KEY);
-    if (popped) {
-      try {
-        const parsed = JSON.parse(popped) as AnalysisJob;
-        // Kiểm tra xem job này còn hợp lệ trong DB không
-        const exists = await this.repo.findOne({
-          where: { id: parsed.analysisId, status: In([AnalysisStatus.PENDING, AnalysisStatus.DISPATCHED]) },
-        });
-        if (exists) return parsed;
-      } catch {
-        /* parse error */
+    const now = Date.now();
+
+    // 1. Lấy analysisId từ Redis queue
+    while (true) {
+      const poppedId = (await this.redisPop(REDIS_QUEUE_KEY)) || this.inMemoryQueue.shift();
+      if (!poppedId) break;
+
+      const meta = await this.getJobMeta(poppedId);
+      // Kiểm tra trong DB xem analysis này có còn đang 'processing' không
+      const dbRow = await this.repo.findOne({ where: { id: poppedId } });
+      if (dbRow && dbRow.status === AnalysisStatus.PROCESSING) {
+        if (meta) {
+          return {
+            analysisId: meta.analysisId,
+            caseId: meta.caseId,
+            imageKey: meta.imageKey,
+            mimeType: meta.mimeType,
+          };
+        }
       }
     }
 
-    // Ưu tiên 2: Lấy từ inMemoryQueue fallback
-    while (this.inMemoryQueue.length > 0) {
-      const next = this.inMemoryQueue.shift()!;
-      const exists = await this.repo.findOne({
-        where: { id: next.analysisId, status: In([AnalysisStatus.PENDING, AnalysisStatus.DISPATCHED]) },
-      });
-      if (exists) return next;
-    }
-
-    // Ưu tiên 3: Quét từ DB: 1 job PENDING cũ nhất
-    const pending = await this.repo.findOne({
-      where: { status: AnalysisStatus.PENDING },
+    // 2. Nếu Redis queue rỗng, quét từ DB các ca đang 'processing' để đối soát
+    const stuck = await this.repo.find({
+      where: { status: AnalysisStatus.PROCESSING },
       relations: { image: true },
       order: { createdAt: 'ASC' },
+      take: 15,
     });
-    if (pending && pending.image) {
-      return {
-        analysisId: pending.id,
-        caseId: pending.caseId,
-        imageKey: pending.image.storageKey,
-        mimeType: pending.image.mimeType,
-      };
-    }
 
-    // Ưu tiên 4: 1 job DISPATCHED đã quá cooldown và retryCount < MAX_RETRY
-    const cooldownBefore = new Date(Date.now() - RESUBMIT_COOLDOWN_MS);
-    const retryable = await this.repo.findOne({
-      where: {
-        status: AnalysisStatus.DISPATCHED,
-        dispatchedAt: LessThan(cooldownBefore),
-        retryCount: LessThan(MAX_RETRY),
-      },
-      relations: { image: true },
-      order: { dispatchedAt: 'ASC' },
-    });
-    if (retryable && retryable.image) {
-      return {
-        analysisId: retryable.id,
-        caseId: retryable.caseId,
-        imageKey: retryable.image.storageKey,
-        mimeType: retryable.image.mimeType,
-      };
+    for (const a of stuck) {
+      if (!a.image) continue;
+
+      const meta = await this.getJobMeta(a.id);
+      if (!meta) {
+        // Chưa có trong Redis (ví dụ sau restart) -> coi như pending mới
+        const newMeta: RedisJobMeta = {
+          analysisId: a.id,
+          caseId: a.caseId,
+          imageKey: a.image.storageKey,
+          mimeType: a.image.mimeType,
+          subStatus: 'pending',
+          dispatchedAt: null,
+          retryCount: 0,
+        };
+        await this.saveJobMeta(a.id, newMeta);
+        return {
+          analysisId: a.id,
+          caseId: a.caseId,
+          imageKey: a.image.storageKey,
+          mimeType: a.image.mimeType,
+        };
+      }
+
+      if (meta.subStatus === 'pending') {
+        return {
+          analysisId: meta.analysisId,
+          caseId: meta.caseId,
+          imageKey: meta.imageKey,
+          mimeType: meta.mimeType,
+        };
+      }
+
+      // Đã dispatched: kiểm tra cooldown và retryCount
+      const elapsed = now - (meta.dispatchedAt ?? 0);
+      if (meta.subStatus === 'dispatched') {
+        if (meta.retryCount >= MAX_RETRY && elapsed >= RESUBMIT_COOLDOWN_MS) {
+          // Quá số lần thử lại tối đa -> đánh dấu FAILED trong DB
+          await this.markFailed(a.id, `Vượt quá số lần thử lại tối đa (${MAX_RETRY} lần)`);
+          await this.deleteJobMeta(a.id);
+          continue;
+        }
+
+        if (elapsed >= RESUBMIT_COOLDOWN_MS && meta.retryCount < MAX_RETRY) {
+          return {
+            analysisId: meta.analysisId,
+            caseId: meta.caseId,
+            imageKey: meta.imageKey,
+            mimeType: meta.mimeType,
+          };
+        }
+      }
     }
 
     return null;
@@ -374,14 +412,21 @@ export class AiAnalysisService implements OnModuleInit {
       return { type: 'fatal' };
     }
 
-    // Kiểm tra lại trạng thái hiện tại trong DB
+    // Kiểm tra lại trạng thái DB
     const current = await this.repo.findOne({ where: { id: job.analysisId } });
-    if (!current || current.status === AnalysisStatus.COMPLETED || current.status === AnalysisStatus.FAILED) {
+    if (!current || current.status !== AnalysisStatus.PROCESSING) {
       return { type: 'skipped' };
     }
 
+    const meta = (await this.getJobMeta(job.analysisId)) ?? {
+      ...job,
+      subStatus: 'pending' as const,
+      dispatchedAt: null,
+      retryCount: 0,
+    };
+
     try {
-      this.logger.log(`Gửi job AI ${job.analysisId} đến ${this.baseUrl}/jobs (retry: ${current.retryCount})`);
+      this.logger.log(`Gửi job AI ${job.analysisId} đến ${this.baseUrl}/jobs (lần gửi ${meta.retryCount + 1})`);
       const res = await fetch(`${this.baseUrl}/jobs`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-AI-Key': this.apiKey },
@@ -397,20 +442,16 @@ export class AiAnalysisService implements OnModuleInit {
 
       this.logger.log(`AI phản hồi job ${job.analysisId}: HTTP ${res.status}`);
 
-      // 202 Accepted (kể cả Duplicate analysis accepted) -> tiếp nhận hợp lệ
+      // 202 Accepted (hoặc Duplicate analysis accepted) -> Tiếp nhận hợp lệ
       if (res.status === 202) {
-        await this.repo.update(
-          { id: job.analysisId, status: In([AnalysisStatus.PENDING, AnalysisStatus.DISPATCHED]) },
-          {
-            status: AnalysisStatus.DISPATCHED,
-            dispatchedAt: new Date(),
-            retryCount: current.retryCount + 1,
-          },
-        );
+        meta.subStatus = 'dispatched';
+        meta.dispatchedAt = Date.now();
+        meta.retryCount += 1;
+        await this.saveJobMeta(job.analysisId, meta);
         return { type: 'accepted' };
       }
 
-      // 503 Quá tải / Đang khởi động lại HOẶC 429 Hàng đợi AI đầy -> Mở Circuit Breaker
+      // 503 Quá tải / Đang khởi động lại HOẶC 429 Hàng đợi đầy -> Mở Circuit Breaker
       if (res.status === 503 || res.status === 429 || res.status === 408) {
         return { type: 'circuit_trip', error: `Dịch vụ AI trả về HTTP ${res.status}` };
       }
@@ -418,6 +459,7 @@ export class AiAnalysisService implements OnModuleInit {
       // 4xx vĩnh viễn (sai auth, bad request) -> đánh dấu FAILED
       if (res.status >= 400 && res.status < 500) {
         await this.markFailed(job.analysisId, `Dịch vụ AI từ chối job (HTTP ${res.status})`);
+        await this.deleteJobMeta(job.analysisId);
         return { type: 'fatal' };
       }
 
@@ -426,7 +468,7 @@ export class AiAnalysisService implements OnModuleInit {
     } catch (err) {
       const errorMsg = (err as Error).message;
       this.logger.warn(`Gửi job ${job.analysisId} thất bại: ${errorMsg}`);
-      // Lỗi mạng hoặc Timeout -> bật Circuit Breaker, không đốt quota retry
+      // Lỗi mạng hoặc Timeout -> bật Circuit Breaker, không tăng retryCount
       return { type: 'circuit_trip', error: errorMsg };
     }
   }
@@ -439,12 +481,14 @@ export class AiAnalysisService implements OnModuleInit {
     // Ca đã bị xóa trong lúc AI chạy: dọn Grad-CAM mồ côi
     if (!analysis) {
       if (dto.gradcam_key && GRADCAM_KEY_RE.test(dto.gradcam_key)) await this.storage.removeMany([dto.gradcam_key]);
+      await this.deleteJobMeta(dto.analysis_id);
       return;
     }
     if (analysis.status === AnalysisStatus.COMPLETED) return; // callback lặp: idempotent
 
     if (dto.status === 'failed') {
       await this.markFailed(analysis.id, dto.error_message ?? 'Dịch vụ AI xử lý thất bại');
+      await this.deleteJobMeta(analysis.id);
       return;
     }
 
@@ -468,7 +512,7 @@ export class AiAnalysisService implements OnModuleInit {
     const res = await this.repo.update(
       {
         id: analysis.id,
-        status: In([AnalysisStatus.PENDING, AnalysisStatus.DISPATCHED, AnalysisStatus.PROCESSING, AnalysisStatus.FAILED]),
+        status: In([AnalysisStatus.PROCESSING, AnalysisStatus.FAILED]),
       },
       {
         status: AnalysisStatus.COMPLETED,
@@ -483,6 +527,8 @@ export class AiAnalysisService implements OnModuleInit {
       } as any,
     );
 
+    await this.deleteJobMeta(analysis.id);
+
     if (!res.affected) {
       if (gradcamKey) await this.storage.removeMany([gradcamKey]);
       return;
@@ -493,12 +539,10 @@ export class AiAnalysisService implements OnModuleInit {
   private async markFailed(analysisId: string, message: string): Promise<void> {
     try {
       await this.repo.update(
-        {
-          id: analysisId,
-          status: In([AnalysisStatus.PENDING, AnalysisStatus.DISPATCHED, AnalysisStatus.PROCESSING]),
-        },
+        { id: analysisId, status: AnalysisStatus.PROCESSING },
         { status: AnalysisStatus.FAILED, errorMessage: message.slice(0, 1000) },
       );
+      await this.deleteJobMeta(analysisId);
     } catch (err) {
       this.logger.error(`Không cập nhật được trạng thái failed: ${(err as Error).message}`);
     }
@@ -506,38 +550,27 @@ export class AiAnalysisService implements OnModuleInit {
 
   // ------------------------------------------------------------ Đối soát định kỳ (Reconcile)
 
-  @Cron('*/20 * * * * *') // Mỗi 20s quét kiểm tra hàng đợi và dọn dẹp job kẹt
+  @Cron('*/20 * * * * *') // Mỗi 20s kiểm tra dọn job kẹt và kích hoạt hàng đợi
   async reconcile(): Promise<void> {
     if (this.reconciling) return;
     this.reconciling = true;
     try {
       const now = Date.now();
       const failBefore = new Date(now - FAIL_AFTER_MS);
-      const cooldownBefore = new Date(now - RESUBMIT_COOLDOWN_MS);
 
-      // 1. Quá 30 phút mà chưa xong -> Đánh dấu FAILED
+      // 1. Quá 30 phút mà chưa xong -> Đánh dấu FAILED trong DB
       await this.repo.update(
         {
-          status: In([AnalysisStatus.PENDING, AnalysisStatus.DISPATCHED, AnalysisStatus.PROCESSING]),
+          status: AnalysisStatus.PROCESSING,
           createdAt: LessThan(failBefore),
         },
         { status: AnalysisStatus.FAILED, errorMessage: 'Quá thời gian xử lý (30 phút)' },
       );
 
-      // 2. Đã vượt quá MAX_RETRY và quá cooldown mà vẫn không có kết quả -> FAILED
-      await this.repo.update(
-        {
-          status: In([AnalysisStatus.PENDING, AnalysisStatus.DISPATCHED]),
-          retryCount: MoreThanOrEqual(MAX_RETRY),
-          dispatchedAt: LessThan(cooldownBefore),
-        },
-        { status: AnalysisStatus.FAILED, errorMessage: `Vượt quá số lần thử lại tối đa (${MAX_RETRY} lần)` },
-      );
-
-      // 3. Nếu Circuit Breaker đang OPEN thì không kích hoạt gửi thêm
+      // 2. Nếu Circuit Breaker đang OPEN thì không kích hoạt gửi thêm
       if (await this.isCircuitOpen()) return;
 
-      // 4. Kích hoạt worker kiểm tra hàng đợi tuần tự
+      // 3. Kích hoạt worker kiểm tra hàng đợi tuần tự
       void this.triggerWorker();
     } catch (err) {
       this.logger.warn(`Đối soát AI gặp lỗi: ${(err as Error).message}`);

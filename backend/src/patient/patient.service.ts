@@ -174,8 +174,7 @@ export class PatientService {
                 m.create(AiAnalysis, {
                   caseId,
                   imageId: i.id,
-                  status: AnalysisStatus.PENDING,
-                  retryCount: 0,
+                  status: AnalysisStatus.PROCESSING,
                 }),
               ),
             )

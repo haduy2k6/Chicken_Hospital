@@ -4,8 +4,6 @@ import { MedicalCase } from './MedicalCase.entity.js';
 import { CaseImage } from './CaseImage.entity.js';
 
 export enum AnalysisStatus {
-  PENDING = 'pending',
-  DISPATCHED = 'dispatched',
   PROCESSING = 'processing',
   COMPLETED = 'completed',
   FAILED = 'failed',
@@ -38,14 +36,8 @@ export class AiAnalysis {
   @JoinColumn({ name: 'image_id' })
   image: Relation<CaseImage>;
 
-  @Column({ type: 'varchar', length: 30, default: AnalysisStatus.PENDING })
+  @Column({ type: 'enum', enum: AnalysisStatus, default: AnalysisStatus.PROCESSING })
   status: AnalysisStatus;
-
-  @Column({ type: 'timestamptz', name: 'dispatched_at', nullable: true })
-  dispatchedAt?: Date | null;
-
-  @Column({ type: 'int', name: 'retry_count', default: 0 })
-  retryCount: number;
 
   /** Chỉ có khi FastAPI trả kết quả */
   @Column({ type: 'varchar', length: 100, name: 'model_name', nullable: true })
