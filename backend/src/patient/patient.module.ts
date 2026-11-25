@@ -1,4 +1,3 @@
-// src/patient/patient.module.ts
 import { Module } from '@nestjs/common';
 import { CaseSupportModule } from '../case-support/case-support.module.js';
 import { SchedulingModule } from '../scheduling/scheduling.module.js';

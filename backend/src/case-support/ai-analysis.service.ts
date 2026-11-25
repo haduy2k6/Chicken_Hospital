@@ -1,11 +1,12 @@
 // src/case-support/ai-analysis.service.ts
+import { randomUUID } from 'node:crypto';
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Cron } from '@nestjs/schedule';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, In, LessThan, Repository } from 'typeorm';
 import { Redis } from '@upstash/redis';
-import { AiAnalysis, AnalysisStatus } from '../Entity-User/AiAnalysis.entity.js';
+import { AiAnalysis, AnalysisStatus } from '../entities/ai-analysis.entity.js';
 import { UPSTASH_REDIS } from '../redis/redis.provider.js';
 import { StorageService } from './storage.service.js';
 
@@ -45,15 +46,12 @@ interface RedisJobMeta {
   subStatus: 'pending' | 'dispatched';
   dispatchedAt: number | null;
   retryCount: number;
+  nextAttemptAt: number | null;
 }
 
-const RESUBMIT_COOLDOWN_MS = 3 * 60 * 1000; // 3 phút cooldown trước khi gửi lại job đã dispatched
-const MAX_RETRY = 3; // Tối đa 3 lần retry
-const FAIL_AFTER_MS = 30 * 60 * 1000; // Quá 30 phút không xong thì đánh dấu FAILED
-const PACING_DELAY_MS = 2000; // Nghỉ 2s giữa các lần gửi job liên tiếp
-const BASE_CIRCUIT_OPEN_MS = 30 * 1000; // 30s mở mạch cơ bản
-const MAX_CIRCUIT_OPEN_MS = 120 * 1000; // Tối đa 2 phút mở mạch
-const HEALTH_TIMEOUT_MS = 10 * 1000; // 10s timeout cho kiểm tra /health
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+/** Full jitter: các instance không cùng gửi lại một lúc. */
+const backoffMs = (attempt: number) => Math.round(Math.random() * Math.min(60_000, 5_000 * 2 ** (attempt - 1)));
 
 const REDIS_QUEUE_KEY = 'ai:queue:jobs';
 const REDIS_LOCK_KEY = 'ai:lock:dispatcher';
@@ -70,6 +68,16 @@ export class AiAnalysisService {
   private readonly baseUrl: string | undefined;
   private readonly apiKey: string | undefined;
   private readonly submitTimeoutMs: number;
+  private readonly pacingMs: number;
+  private readonly batchPerRun: number;
+  private readonly resubmitCooldownMs: number;
+  private readonly maxRetry: number;
+  private readonly failAfterMs: number;
+  private readonly circuitBaseMs: number;
+  private readonly circuitMaxMs: number;
+  private readonly healthTimeoutMs: number;
+  private readonly lockTtlSec: number;
+  private readonly releaseLockScript: { exec(keys: string[], args: string[]): Promise<number> };
 
   // Circuit Breaker in-memory state (kèm đồng bộ Redis)
   private cbState: CircuitState = 'CLOSED';
@@ -89,9 +97,25 @@ export class AiAnalysisService {
     private readonly storage: StorageService,
     @Inject(UPSTASH_REDIS) private readonly redis: Redis,
   ) {
+    const num = (key: string, fallback: number) => {
+      const value = Number(config.get(key));
+      return Number.isFinite(value) && value > 0 ? value : fallback;
+    };
     this.baseUrl = config.get<string>('AI_SERVICE_URL')?.replace(/\/$/, '');
     this.apiKey = config.get<string>('AI_SERVICE_KEY');
-    this.submitTimeoutMs = Number(config.get('AI_SUBMIT_TIMEOUT_MS') ?? 25_000);
+    this.submitTimeoutMs = num('AI_SUBMIT_TIMEOUT_MS', 12_000);
+    this.pacingMs = num('AI_DISPATCH_PACING_MS', 8_000);
+    this.batchPerRun = Math.floor(num('AI_DISPATCH_BATCH_PER_RUN', 5));
+    this.resubmitCooldownMs = num('AI_RESUBMIT_COOLDOWN_MS', 10 * 60 * 1000);
+    this.maxRetry = Math.floor(num('AI_MAX_RETRY', 2));
+    this.failAfterMs = num('AI_FAIL_AFTER_MS', 45 * 60 * 1000);
+    this.circuitBaseMs = num('AI_CIRCUIT_BASE_OPEN_MS', 60_000);
+    this.circuitMaxMs = num('AI_CIRCUIT_MAX_OPEN_MS', 600_000);
+    this.healthTimeoutMs = num('AI_HEALTH_TIMEOUT_MS', 10_000);
+    this.lockTtlSec = Math.ceil(num('AI_DISPATCH_LOCK_TTL_SEC', 300_000) / 1000);
+    this.releaseLockScript = this.redis.createScript<number>(
+      "if redis.call('get', KEYS[1]) == ARGV[1] then return redis.call('del', KEYS[1]) else return 0 end",
+    );
   }
 
   // ------------------------------------------------------------ Redis helpers với graceful fallback
@@ -113,18 +137,20 @@ export class AiAnalysisService {
     }
   }
 
-  private async acquireLock(key: string, ttlSeconds: number): Promise<boolean> {
+  /** Redis lỗi thì không dispatch: cron sẽ thử lại, tránh N instance cùng gửi job. */
+  private async acquireLock(key: string): Promise<string | null> {
     try {
-      const res = await this.redis.set(key, '1', { nx: true, ex: ttlSeconds });
-      return res === 'OK';
+      const token = randomUUID();
+      const res = await this.redis.set(key, token, { nx: true, ex: this.lockTtlSec });
+      return res === 'OK' ? token : null;
     } catch {
-      return true; // Cho phép chạy fallback nội bộ
+      return null;
     }
   }
 
-  private async releaseLock(key: string): Promise<void> {
+  private async releaseLock(key: string, token: string): Promise<void> {
     try {
-      await this.redis.del(key);
+      await this.releaseLockScript.exec([key], [token]);
     } catch {
       /* Khóa tự hết hạn qua TTL */
     }
@@ -162,12 +188,14 @@ export class AiAnalysisService {
 
   private async isCircuitOpen(): Promise<boolean> {
     try {
-      const [remoteState, remoteUntil] = await Promise.all([
+      const [remoteState, remoteUntil, remoteFailures] = await Promise.all([
         this.redis.get<string>(REDIS_CB_STATE_KEY),
         this.redis.get<string | number>(REDIS_CB_OPEN_UNTIL_KEY),
+        this.redis.get<string | number>(REDIS_CB_FAILURES_KEY),
       ]);
       if (remoteState) this.cbState = remoteState as CircuitState;
       if (remoteUntil) this.cbOpenUntil = Number(remoteUntil);
+      if (remoteFailures !== null) this.cbFailures = Number(remoteFailures) || 0;
     } catch {
       /* Dùng state trong bộ nhớ */
     }
@@ -188,17 +216,18 @@ export class AiAnalysisService {
 
   private async tripCircuitBreaker(reason: string): Promise<void> {
     this.cbFailures += 1;
-    const duration = Math.min(
-      MAX_CIRCUIT_OPEN_MS,
-      BASE_CIRCUIT_OPEN_MS * Math.pow(2, Math.max(0, this.cbFailures - 1)),
+    const ceiling = Math.min(
+      this.circuitMaxMs,
+      this.circuitBaseMs * Math.pow(2, Math.max(0, this.cbFailures - 1)),
     );
+    const duration = Math.round(ceiling * (0.5 + Math.random() / 2));
     this.cbOpenUntil = Date.now() + duration;
     this.cbState = 'OPEN';
 
     this.logger.warn(
-      `AI Circuit Breaker BẬT (OPEN) trong ${duration / 1000}s (lần lỗi ${this.cbFailures}) do: ${reason}`,
+      `AI Circuit Breaker BẬT (OPEN) trong ${(duration / 1000).toFixed(1)}s (lần lỗi ${this.cbFailures}) do: ${reason}`,
     );
-    await this.syncCircuitState('OPEN', this.cbOpenUntil, this.cbFailures, Math.ceil(duration / 1000) + 60);
+    await this.syncCircuitState('OPEN', this.cbOpenUntil, this.cbFailures, Math.ceil(this.circuitMaxMs / 1000) + 60);
   }
 
   private async onDispatchSuccess(): Promise<void> {
@@ -229,7 +258,7 @@ export class AiAnalysisService {
       this.logger.log(`Thăm dò GET ${this.baseUrl}/health`);
       const res = await fetch(`${this.baseUrl}/health`, {
         method: 'GET',
-        signal: AbortSignal.timeout(HEALTH_TIMEOUT_MS),
+        signal: AbortSignal.timeout(this.healthTimeoutMs),
       });
       if (res.status === 200) {
         this.logger.log('AI Service /health OK.');
@@ -259,6 +288,7 @@ export class AiAnalysisService {
           subStatus: 'pending',
           dispatchedAt: null,
           retryCount: 0,
+          nextAttemptAt: null,
         });
         this.inMemoryQueue.push(job.analysisId);
         await this.redisPush(REDIS_QUEUE_KEY, job.analysisId);
@@ -270,80 +300,75 @@ export class AiAnalysisService {
   private async triggerWorker(): Promise<void> {
     if (this.isWorkerActive) return;
 
-    const locked = await this.acquireLock(REDIS_LOCK_KEY, 45);
-    if (!locked) return; // Worker khác đang xử lý luồng tuần tự
+    const token = await this.acquireLock(REDIS_LOCK_KEY);
+    if (!token) return; // Worker khác đang giữ lease
 
     this.isWorkerActive = true;
     try {
-      while (true) {
-        // 1. Kiểm tra Circuit Breaker
+      for (let sent = 0; sent < this.batchPerRun; sent++) {
         if (await this.isCircuitOpen()) {
           this.logger.log('Circuit Breaker đang MỞ (OPEN). Tạm dừng gửi job AI.');
           break;
         }
 
-        // 2. Nếu HALF-OPEN, bắt buộc kiểm tra /health trước
-        if (this.cbState === 'HALF_OPEN') {
-          const isHealthy = await this.checkHealth();
-          if (!isHealthy) {
-            await this.tripCircuitBreaker('Health check thất bại trong trạng thái HALF-OPEN');
-            break;
-          }
+        if (this.cbState === 'HALF_OPEN' && !(await this.checkHealth())) {
+          await this.tripCircuitBreaker('Health check thất bại trong trạng thái HALF-OPEN');
+          break;
         }
 
-        // 3. Lấy 1 job đủ điều kiện từ Redis queue hoặc DB
         const job = await this.getNextJob();
-        if (!job) break; // Hết job cần gửi
+        if (!job) break;
 
-        // 4. Gửi tuần tự duy nhất 1 job sang AI Service
         const result = await this.dispatchOne(job);
-
-        if (result.type === 'accepted') {
-          await this.onDispatchSuccess();
-          // Giãn nhịp (pacing) 2s để CPU/RAM của tiến trình AI kịp xử lý
-          await new Promise((resolve) => setTimeout(resolve, PACING_DELAY_MS));
-        } else if (result.type === 'circuit_trip') {
-          this.inMemoryQueue.unshift(job.analysisId);
-          await this.redisPush(REDIS_QUEUE_KEY, job.analysisId);
+        if (result.type === 'accepted') await this.onDispatchSuccess();
+        if (result.type === 'circuit_trip') {
           await this.tripCircuitBreaker(result.error ?? 'Lỗi kết nối / 503');
-          break; // Mạch đã mở, dừng chuỗi gửi
-        } else if (result.type === 'fatal') {
-          // Lỗi vĩnh viễn 4xx đã được đánh dấu FAILED trong DB
-          await new Promise((resolve) => setTimeout(resolve, 1000));
+          break;
         }
+
+        // Mọi lần gửi đều có nhịp nghỉ; job lỗi vẫn nằm trong meta với nextAttemptAt.
+        await sleep(this.pacingMs);
       }
     } catch (err) {
       this.logger.error(`Lỗi không mong muốn trong worker: ${(err as Error).message}`);
     } finally {
       this.isWorkerActive = false;
-      await this.releaseLock(REDIS_LOCK_KEY);
+      await this.releaseLock(REDIS_LOCK_KEY, token);
     }
+  }
+
+  private jobOf(meta: RedisJobMeta): AnalysisJob {
+    return {
+      analysisId: meta.analysisId,
+      caseId: meta.caseId,
+      imageKey: meta.imageKey,
+      mimeType: meta.mimeType,
+    };
+  }
+
+  /** Chỉ gửi lại khi hết cooldown, hết backoff và chưa vượt số lần thử. */
+  private canDispatch(meta: RedisJobMeta, now: number): boolean {
+    if (meta.subStatus === 'pending') return true;
+    if (meta.retryCount >= this.maxRetry) return false;
+    const cooled = meta.dispatchedAt === null || now - meta.dispatchedAt >= this.resubmitCooldownMs;
+    return cooled && (meta.nextAttemptAt === null || now >= meta.nextAttemptAt);
   }
 
   private async getNextJob(): Promise<AnalysisJob | null> {
     const now = Date.now();
 
-    // 1. Lấy analysisId từ Redis queue
     while (true) {
       const poppedId = (await this.redisPop(REDIS_QUEUE_KEY)) || this.inMemoryQueue.shift();
       if (!poppedId) break;
 
       const meta = await this.getJobMeta(poppedId);
-      // Kiểm tra trong DB xem analysis này có còn đang 'processing' không
       const dbRow = await this.repo.findOne({ where: { id: poppedId } });
-      if (dbRow && dbRow.status === AnalysisStatus.PROCESSING) {
-        if (meta) {
-          return {
-            analysisId: meta.analysisId,
-            caseId: meta.caseId,
-            imageKey: meta.imageKey,
-            mimeType: meta.mimeType,
-          };
-        }
+      if (dbRow?.status === AnalysisStatus.PROCESSING && meta && this.canDispatch(meta, now)) {
+        return this.jobOf(meta);
       }
     }
 
-    // 2. Nếu Redis queue rỗng, quét từ DB các ca đang 'processing' để đối soát
+    // Redis queue rỗng: đối soát các job PROCESSING còn tồn trong DB.
     const stuck = await this.repo.find({
       where: { status: AnalysisStatus.PROCESSING },
       relations: { image: true },
@@ -353,56 +378,28 @@ export class AiAnalysisService {
 
     for (const a of stuck) {
       if (!a.image) continue;
+      const meta = await this.getJobMeta(a.id) ?? {
+        analysisId: a.id,
+        caseId: a.caseId,
+        imageKey: a.image.storageKey,
+        mimeType: a.image.mimeType,
+        subStatus: 'pending' as const,
+        dispatchedAt: null,
+        retryCount: 0,
+        nextAttemptAt: null,
+      };
 
-      const meta = await this.getJobMeta(a.id);
-      if (!meta) {
-        // Chưa có trong Redis (ví dụ sau restart) -> coi như pending mới
-        const newMeta: RedisJobMeta = {
-          analysisId: a.id,
-          caseId: a.caseId,
-          imageKey: a.image.storageKey,
-          mimeType: a.image.mimeType,
-          subStatus: 'pending',
-          dispatchedAt: null,
-          retryCount: 0,
-        };
-        await this.saveJobMeta(a.id, newMeta);
-        return {
-          analysisId: a.id,
-          caseId: a.caseId,
-          imageKey: a.image.storageKey,
-          mimeType: a.image.mimeType,
-        };
+      if (meta.subStatus === 'dispatched' && meta.retryCount >= this.maxRetry
+        && now - (meta.dispatchedAt ?? 0) >= this.resubmitCooldownMs) {
+        await this.markFailed(a.id, `Vượt quá số lần thử lại tối đa (${this.maxRetry} lần)`);
+        await this.deleteJobMeta(a.id);
+        continue;
       }
-
-      if (meta.subStatus === 'pending') {
-        return {
-          analysisId: meta.analysisId,
-          caseId: meta.caseId,
-          imageKey: meta.imageKey,
-          mimeType: meta.mimeType,
-        };
+      if (!this.canDispatch(meta, now)) continue;
+      if (meta.dispatchedAt === null && meta.retryCount === 0 && !this.inMemoryJobMeta.has(a.id)) {
+        await this.saveJobMeta(a.id, meta);
       }
-
-      // Đã dispatched: kiểm tra cooldown và retryCount
-      const elapsed = now - (meta.dispatchedAt ?? 0);
-      if (meta.subStatus === 'dispatched') {
-        if (meta.retryCount >= MAX_RETRY && elapsed >= RESUBMIT_COOLDOWN_MS) {
-          // Quá số lần thử lại tối đa -> đánh dấu FAILED trong DB
-          await this.markFailed(a.id, `Vượt quá số lần thử lại tối đa (${MAX_RETRY} lần)`);
-          await this.deleteJobMeta(a.id);
-          continue;
-        }
-
-        if (elapsed >= RESUBMIT_COOLDOWN_MS && meta.retryCount < MAX_RETRY) {
-          return {
-            analysisId: meta.analysisId,
-            caseId: meta.caseId,
-            imageKey: meta.imageKey,
-            mimeType: meta.mimeType,
-          };
-        }
-      }
+      return this.jobOf(meta);
     }
 
     return null;
@@ -425,6 +422,21 @@ export class AiAnalysisService {
       subStatus: 'pending' as const,
       dispatchedAt: null,
       retryCount: 0,
+      nextAttemptAt: null,
+    };
+
+    const retryable = async (error: string) => {
+      meta.retryCount += 1;
+      if (meta.retryCount >= this.maxRetry) {
+        await this.markFailed(job.analysisId, `${error} (đã thử ${meta.retryCount} lần)`);
+        return { type: 'fatal' as const };
+      }
+      const now = Date.now();
+      meta.subStatus = 'dispatched';
+      meta.dispatchedAt = meta.dispatchedAt ?? now;
+      meta.nextAttemptAt = now + backoffMs(meta.retryCount);
+      await this.saveJobMeta(job.analysisId, meta);
+      return { type: 'circuit_trip' as const, error };
     };
 
     try {
@@ -449,29 +461,26 @@ export class AiAnalysisService {
         meta.subStatus = 'dispatched';
         meta.dispatchedAt = Date.now();
         meta.retryCount += 1;
+        meta.nextAttemptAt = null;
         await this.saveJobMeta(job.analysisId, meta);
         return { type: 'accepted' };
       }
 
-      // 503 Quá tải / Đang khởi động lại HOẶC 429 Hàng đợi đầy -> Mở Circuit Breaker
       if (res.status === 503 || res.status === 429 || res.status === 408) {
-        return { type: 'circuit_trip', error: `Dịch vụ AI trả về HTTP ${res.status}` };
+        return retryable(`Dịch vụ AI trả về HTTP ${res.status}`);
       }
 
       // 4xx vĩnh viễn (sai auth, bad request) -> đánh dấu FAILED
       if (res.status >= 400 && res.status < 500) {
         await this.markFailed(job.analysisId, `Dịch vụ AI từ chối job (HTTP ${res.status})`);
-        await this.deleteJobMeta(job.analysisId);
         return { type: 'fatal' };
       }
 
-      // 5xx khác
-      return { type: 'circuit_trip', error: `Dịch vụ AI lỗi máy chủ HTTP ${res.status}` };
+      return retryable(`Dịch vụ AI lỗi máy chủ HTTP ${res.status}`);
     } catch (err) {
       const errorMsg = (err as Error).message;
       this.logger.warn(`Gửi job ${job.analysisId} thất bại: ${errorMsg}`);
-      // Lỗi mạng hoặc Timeout -> bật Circuit Breaker, không tăng retryCount
-      return { type: 'circuit_trip', error: errorMsg };
+      return retryable(errorMsg);
     }
   }
 
@@ -486,7 +495,10 @@ export class AiAnalysisService {
       await this.deleteJobMeta(dto.analysis_id);
       return;
     }
-    if (analysis.status === AnalysisStatus.COMPLETED) return; // callback lặp: idempotent
+    if (analysis.status === AnalysisStatus.COMPLETED) {
+      await this.deleteJobMeta(dto.analysis_id);
+      return; // callback lặp: idempotent
+    }
 
     if (dto.status === 'failed') {
       await this.markFailed(analysis.id, dto.error_message ?? 'Dịch vụ AI xử lý thất bại');
@@ -558,15 +570,15 @@ export class AiAnalysisService {
     this.reconciling = true;
     try {
       const now = Date.now();
-      const failBefore = new Date(now - FAIL_AFTER_MS);
+      const failBefore = new Date(now - this.failAfterMs);
 
-      // 1. Quá 30 phút mà chưa xong -> Đánh dấu FAILED trong DB
+      // Quá hạn vẫn đánh dấu FAILED; callback muộn có thể hồi sinh nhờ update có điều kiện.
       await this.repo.update(
         {
           status: AnalysisStatus.PROCESSING,
           createdAt: LessThan(failBefore),
         },
-        { status: AnalysisStatus.FAILED, errorMessage: 'Quá thời gian xử lý (30 phút)' },
+        { status: AnalysisStatus.FAILED, errorMessage: `Quá thời gian xử lý (${Math.round(this.failAfterMs / 60_000)} phút)` },
       );
 
       // 2. Nếu Circuit Breaker đang OPEN thì không kích hoạt gửi thêm

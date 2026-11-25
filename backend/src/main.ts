@@ -2,10 +2,11 @@ import { NestFactory } from '@nestjs/core';
 import cookieParser from 'cookie-parser';
 import helmet from 'helmet';
 import { AppModule } from './app.module.js';
-import { allowedOrigins, isAllowedOrigin } from './common/safe-redirect.util.js';
+import { frontOrigin, isFrontOrigin } from './common/utils/safe-redirect.util.js';
 
 async function bootstrap() {
-  allowedOrigins(); 
+  // Fail-fast nếu FRONT thiếu/sai ngay từ lúc khởi động (chỉ áp dụng ở production).
+  frontOrigin();
 
   const app = await NestFactory.create(AppModule);
   const httpInstance = app.getHttpAdapter().getInstance();
@@ -14,8 +15,7 @@ async function bootstrap() {
   app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
   app.use(cookieParser());
   app.enableCors({
-    origin: (origin: string | undefined, cb: (err: Error | null, allow?: boolean) => void) =>
-      cb(null, isAllowedOrigin(origin)),
+    origin: (origin: string | undefined, cb: (err: Error | null, allow?: boolean) => void) => cb(null, isFrontOrigin(origin)),
     credentials: true,
   });
   app.enableShutdownHooks();

@@ -86,9 +86,12 @@ export interface ReviewCasePayload {
   referral?: { toDoctorId?: string; toSpecialtyId?: string };
 }
 
-function toIsoFromLocalInput(value: string): string {
+/** `t` lấy từ useTranslations("DoctorReview.errors") ở component gọi. */
+type ReviewTranslate = (key: string, values?: Record<string, string | number>) => string;
+
+function toIsoFromLocalInput(value: string, t?: ReviewTranslate): string {
   const date = new Date(value);
-  if (Number.isNaN(date.getTime())) throw new Error("Ngày hẹn không hợp lệ");
+  if (Number.isNaN(date.getTime())) throw new Error(t ? t("invalidDate") : "Ngày hẹn không hợp lệ");
   return date.toISOString();
 }
 
@@ -97,21 +100,21 @@ function getHttpStatus(err: unknown): number | undefined {
   return typeof status === "number" ? status : undefined;
 }
 
-export function useReviewCaseMutation() {
+export function useReviewCaseMutation(t?: ReviewTranslate) {
   const queryClient = useQueryClient();
   const userId = useAuthStore((s) => s.user?.userId ?? "");
 
   return useMutation<ReviewCaseResult, Error, ReviewCasePayload>({
     mutationFn: async (p) => {
       if (p.status === "escalated" && !p.referral?.toDoctorId && !p.referral?.toSpecialtyId) {
-        throw new Error("Cần chọn bác sĩ hoặc khoa nhận khi chuyển tuyến");
+        throw new Error(t ? t("referralRequired") : "Cần chọn bác sĩ hoặc khoa nhận khi chuyển tuyến");
       }
       const body: ReviewCaseRequest = {
         status: p.status,
         notes: p.notes.trim(),
         expectedVersion: p.expectedVersion,
         ...(p.assessmentData ? { assessmentData: p.assessmentData } : {}),
-        ...(p.status === "reviewed" && p.followUpDate ? { followUpAt: toIsoFromLocalInput(p.followUpDate) } : {}),
+        ...(p.status === "reviewed" && p.followUpDate ? { followUpAt: toIsoFromLocalInput(p.followUpDate, t) } : {}),
         ...(p.status === "escalated" && p.referral ? { referral: p.referral } : {}),
       };
       return doctorService.reviewPatientCase(p.caseId, body);

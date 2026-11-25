@@ -1,8 +1,7 @@
-// src/case-support/intake-schema.ts
 // Nguồn duy nhất định nghĩa form khai báo từng khoa (thay cho bảng specialty_forms).
 // Thêm khoa mới = thêm một mục vào INTAKE; khóa là camelCase ổn định, giá trị enum giữ nguyên tiếng Anh.
 import { BadRequestException } from '@nestjs/common';
-import { ImageKind } from '../Entity-User/CaseImage.entity.js';
+import { ImageKind } from '../entities/case-image.entity.js';
 
 type Field =
   | { type: 'int' | 'number'; min: number; max: number }

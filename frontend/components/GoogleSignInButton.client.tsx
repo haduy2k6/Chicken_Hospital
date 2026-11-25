@@ -2,7 +2,6 @@
 
 import { authService } from "@/src/features/auth/auth.service";
 
-/** Nút đăng nhập Google duy nhất của hệ thống (dùng ở Hero và popup đăng nhập) */
 export function GoogleSignInButton({ label, className = "" }: { label: string; className?: string }) {
   return (
     <button

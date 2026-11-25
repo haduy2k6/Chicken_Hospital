@@ -45,6 +45,8 @@ export const scheduleService = {
   book: (body: { caseId: string; doctorId: string; date: string; session: WorkSession }) =>
     http.post(API_ROUTES.PATIENT.APPOINTMENTS, body),
 
+  cancelAppointment: (id: string) => http.post(API_ROUTES.PATIENT.CANCEL_APPOINTMENT(id)),
+
   getAvailability: (weekStart: string): Promise<AvailabilitySlot[]> =>
     http.get(API_ROUTES.DOCTOR.AVAILABILITY, { params: { weekStart } }),
 

@@ -5,7 +5,18 @@ export type StatusFilter = "all" | CaseStatus;
 export type Gender = "Male" | "Female" | "Other";
 export type AiStatus = "processing" | "completed" | "failed";
 
+/** Fallback tiếng Việt; component nên dùng genderLabel(gender, t). */
 export const GENDER_LABEL: Record<Gender, string> = { Male: "Nam", Female: "Nữ", Other: "Khác" };
+
+/** `t` lấy từ useTranslations("Patient.form.options") ở component gọi. */
+type OptionTranslate = (key: string, values?: Record<string, string | number>) => string;
+
+export function genderLabel(gender: Gender, t?: OptionTranslate): string {
+  if (!t) return GENDER_LABEL[gender];
+  if (gender === "Male") return t("male");
+  if (gender === "Female") return t("female");
+  return t("other");
+}
 
 export interface ReviewDraft {
   notes: string;

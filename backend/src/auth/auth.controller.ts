@@ -1,96 +1,72 @@
-import { randomUUID } from 'crypto';
-import { Controller, ForbiddenException, Get, HttpCode, Post, Req, Res, UnauthorizedException, UseFilters, UseGuards } from '@nestjs/common';
+import { Controller, Get, HttpCode, Post, Req, Res, UnauthorizedException, UseFilters, UseGuards } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
 import type { Request, Response } from 'express';
-import { UserRole } from '../Entity-User/User.entity.js';
-import { REFRESH_COOKIE, ROLE_COOKIE, clearOptions, refreshCookieOptions, roleCookieOptions } from '../common/auth-cookie.util.js';
-import { GoogleCallbackFilter } from '../common/google-callback.filter.js';
-import { isAllowedOrigin } from '../common/safe-redirect.util.js';
-import { AccessGuard } from '../guard/accessToken.guard.js';
-import { GoogleGuard } from '../guard/google.guard.js';
-import { RefreshGuard } from '../guard/refreshToken.guard.js';
+import { GoogleCallbackFilter } from '../common/filters/google-callback.filter.js';
+import { clearAuthCookies, REFRESH_COOKIE, setAuthCookies } from '../common/utils/auth-cookie.util.js';
+import { bearerTokenFrom } from '../common/utils/request.util.js';
+import { frontUrl } from '../common/utils/safe-redirect.util.js';
 import { AuthService } from './auth.service.js';
+import type { OAuthRequest } from './auth.types.js';
+import { CurrentUser } from './decorators/current-user.decorator.js';
+import { toSiteRole } from './dto/auth.dto.js';
+import type { AuthUserDto } from './dto/auth.dto.js';
+import { AccessGuard } from './guards/access-token.guard.js';
+import { GoogleGuard } from './guards/google.guard.js';
+import { RefreshGuard } from './guards/refresh-token.guard.js';
+
+type GoogleCallbackRequest = OAuthRequest & { user: AuthUserDto };
+type RefreshUser = { userId: string; sid: string; refreshToken: string; sat?: number };
 
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
-  private siteRole(role?: string): 'doctor' | 'patient' {
-    return role === UserRole.DOCTOR ? 'doctor' : 'patient';
-  }
-
-  private setRefreshCookie(res: Response, token: string, siteRole: string) {
-    res.cookie(REFRESH_COOKIE, token, refreshCookieOptions());
-    res.cookie(ROLE_COOKIE, siteRole, roleCookieOptions());
-  }
-
-  private clearRefreshCookie(res: Response) {
-    res.clearCookie(REFRESH_COOKIE, clearOptions(refreshCookieOptions()));
-    res.clearCookie(ROLE_COOKIE, clearOptions(roleCookieOptions()));
-  }
-
-  private assertTrustedOrigin(req: Request) {
-    if (!isAllowedOrigin(req.headers.origin)) throw new ForbiddenException('Origin không được phép');
-  }
-
   @Get('google')
+  @Throttle({ default: { limit: 20, ttl: 60_000 } })
   @UseGuards(GoogleGuard)
-  async loginByGoogle() {}
+  loginByGoogle() {}
 
- 
   @Get('google/callback')
-  @UseFilters(GoogleCallbackFilter)
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
   @UseGuards(GoogleGuard)
-  async googleCallback(@Req() req: any, @Res() res: Response) {
-    const { locale, origin } = req.oauthState;
-    const { userId, role } = req.user;
-
-    const siteRole = this.siteRole(role);
-    const { refreshToken } = await this.authService.createToken(userId, randomUUID());
-    this.setRefreshCookie(res, refreshToken, siteRole);
-    return res.redirect(`${origin}/${locale}/${siteRole}?auth=success`);
+  @UseFilters(GoogleCallbackFilter)
+  async googleCallback(@Req() req: GoogleCallbackRequest, @Res() res: Response) {
+    const siteRole = toSiteRole(req.user.role);
+    const refreshToken = await this.authService.startSession(req.user.userId);
+    setAuthCookies(res, refreshToken, siteRole);
+    return res.redirect(`${frontUrl(req.oauthLocale, siteRole)}?auth=success`);
   }
 
-  /** Mọi tab dùng chung cookie refresh: tab mới gọi endpoint này để lấy access token */
   @UseGuards(RefreshGuard)
   @Throttle({ default: { limit: 30, ttl: 60_000 } })
   @Post('refresh')
   @HttpCode(200)
-  async refresh(@Req() req: any, @Res({ passthrough: true }) res: Response) {
-    this.assertTrustedOrigin(req);
-    const { userId, sid, refreshToken } = req.user;
+  async refresh(@CurrentUser() user: RefreshUser, @Res({ passthrough: true }) res: Response) {
+    const { userId, sid, refreshToken, sat } = user;
 
     try {
-      const result = await this.authService.refreshTokens(userId, sid, refreshToken);
-      const siteRole = this.siteRole(result.role);
-      if (result.refreshToken) this.setRefreshCookie(res, result.refreshToken, siteRole);
+      const result = await this.authService.refreshTokens(userId, sid, refreshToken, sat);
+      const siteRole = toSiteRole(result.role);
+      if (result.refreshToken) setAuthCookies(res, result.refreshToken, siteRole);
 
       return { accessToken: result.accessToken, userId, role: siteRole, name: result.name, email: result.email, avatar: result.avatar };
     } catch (error) {
-      if (error instanceof UnauthorizedException) this.clearRefreshCookie(res);
+      if (error instanceof UnauthorizedException) clearAuthCookies(res);
       throw error;
     }
   }
 
   @UseGuards(AccessGuard)
   @Get('me')
-  async getMe(@Req() req: any) {
-    return this.authService.getProfile(req.user.userId);
+  async getMe(@CurrentUser('userId') userId: string) {
+    return this.authService.getProfile(userId);
   }
 
   @Post('logout')
   @HttpCode(200)
   async logout(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
-    this.assertTrustedOrigin(req);
-    this.clearRefreshCookie(res);
-
-    const refreshCookie = req.cookies?.[REFRESH_COOKIE];
-    const bearer = req.get('Authorization')?.replace(/^Bearer\s+/i, '').trim();
-
-    const payload =
-      (refreshCookie ? await this.authService.verifyRefreshToken(refreshCookie) : null) ??
-      (bearer ? await this.authService.verifyAccessTokenIgnoringExpiry(bearer) : null);
-
+    clearAuthCookies(res);
+    const payload = await this.authService.resolveLogoutPayload(req.cookies?.[REFRESH_COOKIE], bearerTokenFrom(req));
     if (payload?.sub && payload.sid) {
       await this.authService.logoutSession(payload.sub, payload.sid).catch(() => undefined);
     }
@@ -100,10 +76,9 @@ export class AuthController {
   @UseGuards(AccessGuard)
   @Post('logout-all')
   @HttpCode(200)
-  async logoutAll(@Req() req: any, @Res({ passthrough: true }) res: Response) {
-    this.assertTrustedOrigin(req);
-    this.clearRefreshCookie(res);
-    await this.authService.logoutAll(req.user.userId);
+  async logoutAll(@CurrentUser('userId') userId: string, @Res({ passthrough: true }) res: Response) {
+    clearAuthCookies(res);
+    await this.authService.logoutAll(userId);
     return { success: true, message: 'Đã đăng xuất khỏi mọi thiết bị' };
   }
 }

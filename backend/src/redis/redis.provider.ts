@@ -10,6 +10,8 @@ export const UpstashRedisProvider: Provider = {
     new Redis({
       url: config.getOrThrow<string>('UPSTASH_REDIS_REST_URL'),
       token: config.getOrThrow<string>('UPSTASH_REDIS_REST_TOKEN'),
+      // Upstash là HTTP: gộp các lệnh phát sinh đồng thời thành một request
+      enableAutoPipelining: true,
     }),
   inject: [ConfigService],
 };

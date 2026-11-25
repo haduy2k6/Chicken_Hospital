@@ -268,7 +268,8 @@
       "tooLarge": "{name}: exceeds {max}MB limit",
       "selected": "Selected {count} images",
       "clearAll": "Clear All",
-      "remove": "Remove {name}"
+      "remove": "Remove {name}",
+      "disabled": "Temporarily locked - awaiting the previous diagnosis result"
     },
     "actions": {
       "next": "Next",
@@ -291,7 +292,8 @@
         "female": "Female",
         "low": "Low",
         "moderate": "Moderate",
-        "high": "High"
+        "high": "High",
+        "other": "Other"
       },
       "fields": {
         "age": "Age",
@@ -311,7 +313,29 @@
         "patches": "White or Red Patches in Mouth"
       }
     },
-    "quotaUsed": "Used {used}/{max} case submissions."
+    "quotaUsed": "Used {used}/{max} case submissions.",
+    "messages": {
+      "onlyOneImage": "Only one image can be processed; the first image you selected was kept.",
+      "saveFailed": "Could not save the temporary image on this device (storage may be full). You can still submit it in this session, but the image will be lost if you reload the page."
+    },
+    "quota": {
+      "blocked": "You have reached the submission limit. Confirm a referral or wait for an appointment to be completed on the Appointments page to free up a slot.",
+      "eviction": {
+        "reviewed": "You have reached the submission limit. The oldest reviewed case {caseId} will be deleted automatically to make room for a new case.",
+        "pending": "All cases are awaiting a doctor. The most recently submitted case {caseId} will be replaced by the new one."
+      },
+      "confirmContinue": "Continue submitting?"
+    },
+    "pending": {
+      "error": "You have a diagnosis still being processed. Please wait for the result before submitting another case.",
+      "title": "Your oncology diagnosis is being analysed by the system.",
+      "body": "We are processing and evaluating your diagnostic images. Please wait for the result on the Appointments page before submitting a new case.",
+      "link": "View progress in Appointments"
+    },
+    "submission": {
+      "success": "Case and images submitted successfully!",
+      "evicted": "Removed old case {caseId}"
+    }
   },
   "Auth": {
     "close": "Close",
@@ -366,5 +390,202 @@
     "noAvailable": "No doctors available on this day. Please pick another date.",
     "morning": "Morning (8AM–11AM)",
     "afternoon": "Afternoon (2PM–5PM)"
+  },
+  "Common": {
+    "errors": {
+      "generic": "Something went wrong",
+      "conflict": {
+        "SLOT_TAKEN": "This time slot is already booked, or the doctor already has 3 cases that day. Please choose another time.",
+        "VERSION_CONFLICT": "This case was just updated elsewhere. Please review the latest content and submit again."
+      }
+    },
+    "ai": {
+      "malignant": "The model flagged signals that need a doctor's review",
+      "benign": "No signal detected by the model; disease cannot be ruled out",
+      "unknown": "Model output available"
+    }
+  },
+  "DoctorQueue": {
+    "filter": {
+      "label": "Filters",
+      "status": "Status:",
+      "specialty": "Specialty:"
+    },
+    "status": {
+      "all": "All",
+      "pending": "Awaiting review",
+      "reviewed": "Approved",
+      "escalated": "Referred"
+    },
+    "specialty": {
+      "all": "All departments",
+      "oncology": "Oncology",
+      "nephrology": "Nephrology & Urology",
+      "cardiology": "Cardiology"
+    },
+    "count": "{count} cases",
+    "caseId": "Case ID: #{id}",
+    "age": "{age} years old",
+    "viewCase": "View case & review",
+    "loading": "Loading case list...",
+    "empty": {
+      "title": "No cases match the current filters",
+      "hint": "Change the status or specialty to see other cases."
+    },
+    "ai": {
+      "processing": "AI is analysing",
+      "failed": "AI analysis failed",
+      "noScore": "No AI score yet",
+      "score": "Model score: {score}%"
+    }
+  },
+  "DoctorWorkspace": {
+    "badge": "Specialist area",
+    "title": "Case Queue",
+    "doctorLabel": "Doctor:",
+    "fallbackDoctor": "Specialist",
+    "pendingCount": "{count} cases awaiting review",
+    "noPending": "No cases awaiting review",
+    "loading": "Loading...",
+    "refresh": "Refresh list",
+    "toast": {
+      "escalated": "Case #{caseId} was referred. It is no longer in your list.",
+      "reviewed": "Review saved for case #{caseId}."
+    },
+    "errors": {
+      "submit": "Could not submit the review. Please try again.",
+      "queueLoad": "Could not load the case list.",
+      "detailLoad": "Could not load the case details."
+    }
+  },
+  "DoctorReview": {
+    "title": "Case File & Clinical Review",
+    "newerVersion": "This case was just updated elsewhere. The information below may be out of date.",
+    "acceptNewVersion": "Understood, use the latest version",
+    "patientLabel": "Patient:",
+    "aiSummary": "Overall AI analysis:",
+    "retry": "Reload case",
+    "loading": "Loading case details...",
+    "symptoms": {
+      "title": "Patient symptoms and statements",
+      "noNote": "No additional notes from the patient."
+    },
+    "images": {
+      "title": "Endoscopy images & documents ({count})",
+      "openDocument": "Open document",
+      "analysisFailed": "AI error",
+      "processing": "Analysing",
+      "empty": "No images or documents attached to this case",
+      "modelScore": "Model {score}%"
+    },
+    "processedNotice": "This case has already been processed. You can review it but cannot submit another conclusion.",
+    "notes": {
+      "label": "Clinical notes and conclusion",
+      "placeholder": "Enter the clinical diagnosis, requested tests, or instructions for the patient..."
+    },
+    "action": {
+      "title": "Action",
+      "review": "Approve and schedule follow-up",
+      "escalate": "Refer"
+    },
+    "followUp": {
+      "label": "Schedule an in-person or follow-up visit (optional)",
+      "hint": "The appointment will appear in the patient's records."
+    },
+    "referral": {
+      "label": "Refer to doctor or department",
+      "placeholder": "Select a recipient...",
+      "unavailable": "Recipient list unavailable; referral is not possible right now."
+    },
+    "submit": {
+      "escalate": "Send referral",
+      "review": "Save conclusion"
+    },
+    "preview": {
+      "score": "Model score (not disease probability): {score}%",
+      "analysisFailed": "AI failed to analyse this image",
+      "processing": "AI is analysing this image",
+      "gradcam": "View AI focus area (Grad-CAM)",
+      "original": "View original image"
+    },
+    "errors": {
+      "invalidDate": "Invalid appointment date",
+      "referralRequired": "Select a receiving doctor or department when referring"
+    }
+  },
+  "NephrologyForm": {
+    "badge": "Chronic kidney disease screening (CKD-EPI)",
+    "title": "Online Kidney Function Assessment",
+    "subtitle": "Enter your test results to estimate glomerular filtration rate (eGFR, CKD-EPI) and send the case to a nephrologist for review.",
+    "fields": {
+      "age": "Age (years)",
+      "gender": "Gender",
+      "creatinine": "Serum creatinine (mg/dL)",
+      "proteinuria": "Proteinuria",
+      "systolic": "Systolic blood pressure (mmHg)",
+      "diastolic": "Diastolic blood pressure (mmHg)"
+    },
+    "options": {
+      "proteinuria": {
+        "negative": "Negative",
+        "trace": "Trace",
+        "1plus": "1+ (30 mg/dL)",
+        "2plus": "2+ (100 mg/dL)",
+        "3plus": "3+ (300 mg/dL or higher)"
+      }
+    },
+    "calculate": "Calculate eGFR",
+    "result": {
+      "title": "Kidney filtration assessment result",
+      "unit": "mL/min/1.73m²",
+      "disclaimer": "* This result supports screening only. Submit your case for a nephrologist's assessment.",
+      "viewRecords": "View my records"
+    },
+    "send": "Send case to nephrologist",
+    "sendSignIn": "Sign in to send your case to a nephrologist",
+    "errors": {
+      "notPatient": "Only patient accounts can submit cases."
+    },
+    "sent": "Case sent to the nephrologist.",
+    "stages": {
+      "g1": {
+        "stage": "Normal / mild kidney damage with normal eGFR (G1)",
+        "recommendations": ["Maintain a daily intake of 2 - 2.5 litres of water", "Have a health check-up every 12 months"]
+      },
+      "g2": {
+        "stage": "Mildly decreased glomerular filtration rate (CKD G2)",
+        "recommendations": [
+          "Keep blood pressure strictly below 130/80 mmHg",
+          "Reduce salt intake (under 5g/day) and limit ultra-processed foods",
+          "Schedule a follow-up and repeat serum creatinine in 3 - 6 months"
+        ]
+      },
+      "g3a": {
+        "stage": "Mild to moderate decrease in filtration rate (CKD G3a)",
+        "recommendations": [
+          "See a nephrologist to identify the underlying cause",
+          "Measure the urine albumin/creatinine ratio (ACR) over 24 hours",
+          "Adjust doses of medicines cleared by the kidneys"
+        ]
+      },
+      "g3b": {
+        "stage": "Moderate to severe decrease in filtration rate (CKD G3b)",
+        "recommendations": [
+          "Get a referral to a nephrologist",
+          "Manage complications such as anaemia, metabolic acidosis and bone mineral disorders"
+        ]
+      },
+      "g4": {
+        "stage": "Severely decreased kidney function (CKD G4)",
+        "recommendations": [
+          "Arrange a specialist consultation to plan dialysis or transplantation",
+          "Follow a strict potassium, phosphate and protein restricted diet"
+        ]
+      },
+      "g5": {
+        "stage": "End-stage kidney disease (CKD G5 / ESRD)",
+        "recommendations": ["Renal replacement therapy is indicated (haemodialysis / peritoneal dialysis / transplant)"]
+      }
+    }
   }
 }

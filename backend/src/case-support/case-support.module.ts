@@ -1,10 +1,10 @@
-// src/case-support/case-support.module.ts
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { AiAnalysis } from '../Entity-User/AiAnalysis.entity.js';
-import { AuditLog } from '../Entity-User/AuditLog.entity.js';
+import { AiAnalysis } from '../entities/ai-analysis.entity.js';
+import { AuditLog } from '../entities/audit-log.entity.js';
 import { AiAnalysisService } from './ai-analysis.service.js';
-import { AiCallbackController, AiCallbackGuard } from './ai-callback.controller.js';
+import { AiCallbackController } from './ai-callback.controller.js';
+import { AiCallbackGuard } from './guards/ai-callback.guard.js';
 import { AuditService } from './audit.service.js';
 import { StorageService } from './storage.service.js';
 

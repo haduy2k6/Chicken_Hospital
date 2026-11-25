@@ -28,6 +28,14 @@ export function useBookAppointment() {
   });
 }
 
+export function useCancelAppointment() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => scheduleService.cancelAppointment(id),
+    onSuccess: () => qc.invalidateQueries({ queryKey: queryKeys.patient.all }),
+  });
+}
+
 // ---- bác sĩ
 function useDoctorId() {
   return useAuthStore((s) => (s.authReady && s.user?.role === "doctor" ? s.user.userId : ""));

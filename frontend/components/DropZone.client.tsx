@@ -11,6 +11,7 @@ const MAX_SIZE = MAX_MB * 1024 * 1024;
 
 export function DropZone({ disabled }: { disabled?: boolean } = {}) {
   const t = useTranslations("Patient.dropzone");
+  const tMessages = useTranslations("Patient.messages");
   const user = useAuthStore((s) => s.user);
   const userId = user?.userId || "guest";
   const files = usePatientStore((s) => s.files);
@@ -38,7 +39,7 @@ export function DropZone({ disabled }: { disabled?: boolean } = {}) {
     });
 
     setErrors(rejected);
-    if (valid.length) addFiles(valid);
+    if (valid.length) addFiles(valid, tMessages);
   };
 
   return (
@@ -87,7 +88,7 @@ export function DropZone({ disabled }: { disabled?: boolean } = {}) {
           <CloudBackup size={24} />
         </span>
         <span className="font-medium text-amber-950">
-          {disabled ? "Chức năng tạm khóa - Đang chờ kết quả chẩn đoán trước" : dragging ? t("titleDragging") : t("title")}
+          {disabled ? t("disabled") : dragging ? t("titleDragging") : t("title")}
         </span>
         <span className="text-sm text-amber-900/70">{t("hint")}</span>
         <span className="text-xs text-amber-900/60">{t("limit", { max: MAX_MB })}</span>
@@ -133,7 +134,7 @@ export function DropZone({ disabled }: { disabled?: boolean } = {}) {
               <FileItem
                 key={`${file.name}-${file.lastModified}-${i}`}
                 file={file}
-                onRemove={() => removeFile(i)}
+                onRemove={() => removeFile(i, tMessages)}
               />
             ))}
           </ul>

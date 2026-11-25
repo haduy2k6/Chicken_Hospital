@@ -7,7 +7,13 @@ import { Status, usePatientStore } from "@/src/stores/patientStore";
 import { DropZone } from "./DropZone.client";
 import { PatientForm, PATIENT_FORM_ID } from "./PatientForm.client";
 import { usePatientHistoryQuery, usePatientQuota, useSubmitPatientMutation } from "@/src/query/usePatientQueries";
-import { BLOCKED_MESSAGE, describeEviction, shortId, type QuotaState } from "@/src/features/patient/Quota";
+import {
+  blockedMessage,
+  confirmContinueMessage,
+  describeEviction,
+  shortId,
+  type QuotaState,
+} from "@/src/features/patient/Quota";
 import { errMsg } from "@/src/lib/httpError";
 import { Link, useRouter } from "@/src/i18n/routing";
 import { APP_ROUTES } from "@/src/config/routes.config";
@@ -20,6 +26,7 @@ const BTN =
 
 export function UploadStep() {
   const t = useTranslations("Patient");
+  const tErrors = useTranslations("Common.errors");
   const router = useRouter();
   const status = usePatientStore((s) => s.status);
   const goToForm = usePatientStore((s) => s.goToForm);
@@ -28,15 +35,16 @@ export function UploadStep() {
   const storageError = usePatientStore((s) => s.error);
   const submissionSuccessMsg = usePatientStore((s) => s.submissionSuccessMsg);
   const setSubmissionSuccess = usePatientStore((s) => s.setSubmissionSuccess);
-  const submitMutation = useSubmitPatientMutation();
+  const submitMutation = useSubmitPatientMutation(t);
   const quota = usePatientQuota();
   const { data: historyData } = usePatientHistoryQuery();
   const [error, setError] = useState<string | null>(null);
 
   // Chỉ khóa khi có hồ sơ ung bướu mà AI đang trong quá trình phân tích (chưa có kết quả)
+  const historyItems = historyData?.items;
   const hasPendingDiagnosis = useMemo(() => {
-    if (!historyData?.items) return false;
-    return historyData.items.some((item) => {
+    if (!historyItems) return false;
+    return historyItems.some((item) => {
       // Chỉ xét ca ung bướu chưa được bác sĩ khám xong
       if (item.specialtyCode !== SPECIALTY || item.status !== "pending") return false;
       // Nếu chưa có kết quả nào hoặc có ảnh AI đang trong tiến trình phân tích
@@ -47,7 +55,7 @@ export function UploadStep() {
         )
       );
     });
-  }, [historyData?.items]);
+  }, [historyItems]);
 
   const step = status === Status.post ? 1 : 0;
   const isSubmitting = submitMutation.isPending;
@@ -58,21 +66,23 @@ export function UploadStep() {
     setError(null);
 
     if (hasPendingDiagnosis) {
-      setError("Bạn đang có hồ sơ chẩn đoán đang chờ xử lý. Vui lòng đợi đến khi có kết quả trước khi gửi tiếp.");
+      setError(t("pending.error"));
       return;
     }
 
     if (quota.blocked) {
-      setError(BLOCKED_MESSAGE);
+      setError(blockedMessage(t));
       return;
     }
 
-    if (quota.eviction && !window.confirm(`${describeEviction(quota.eviction)}\n\nTiếp tục gửi?`)) return;
+    if (quota.eviction && !window.confirm(`${describeEviction(quota.eviction, t)}\n\n${confirmContinueMessage(t)}`)) return;
 
     try {
       const res = await submitMutation.mutateAsync({ specialty: SPECIALTY, files, formValues: values });
-      const base = res.message || "Gửi hồ sơ và hình ảnh thành công!";
-      setSubmissionSuccess(res.evictedCaseId ? `${base} (Đã xóa hồ sơ cũ ${shortId(res.evictedCaseId)})` : base);
+      const base = res.message || t("submission.success");
+      setSubmissionSuccess(
+        res.evictedCaseId ? `${base} (${t("submission.evicted", { caseId: shortId(res.evictedCaseId) })})` : base,
+      );
 
       // Khóa và dọn sạch các tệp vừa gửi
       clearFiles();
@@ -80,7 +90,7 @@ export function UploadStep() {
       // Chuyển luôn người dùng sang trang lịch khám theo yêu cầu
       router.push(APP_ROUTES.APPOINTMENTS);
     } catch (err) {
-      setError(errMsg(err, t("actions.error")));
+      setError(errMsg(err, t("actions.error"), tErrors));
     }
   };
 
@@ -94,17 +104,17 @@ export function UploadStep() {
         <div className="rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900 space-y-2 animate-fadeIn">
           <div className="flex items-start gap-2 font-semibold">
             <Clock className="w-5 h-5 text-amber-600 mt-0.5 shrink-0 animate-pulse" />
-            <span>Hồ sơ chẩn đoán ung bướu của bạn đang được hệ thống phân tích.</span>
+            <span>{t("pending.title")}</span>
           </div>
           <p className="text-xs text-amber-800 pl-7 leading-relaxed">
-            Hệ thống đang xử lý và đánh giá ảnh chẩn đoán của bạn. Vui lòng chờ đến khi có kết quả tại trang Lịch Khám trước khi gửi hồ sơ chẩn đoán mới.
+            {t("pending.body")}
           </p>
           <div className="pl-7 pt-1">
             <Link
               href={APP_ROUTES.APPOINTMENTS}
               className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-amber-800 hover:bg-amber-900 text-white text-xs font-bold transition-all shadow-xs cursor-pointer"
             >
-              <span>Xem tiến trình tại Lịch Khám</span>
+              <span>{t("pending.link")}</span>
               <ArrowRight className="w-3.5 h-3.5" />
             </Link>
           </div>

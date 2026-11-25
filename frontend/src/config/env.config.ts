@@ -1,12 +1,11 @@
 class EnvironmentConfig {
-  public readonly apiUrl: string;
+  /** Trình duyệt luôn gọi API qua /api: Next rewrite chuyển tiếp sang backend (xem next.config.ts), nhờ đó cookie là cookie cùng site. */
+  public readonly apiUrl: string = "/api";
   public readonly appUrl: string;
   public readonly isProduction: boolean;
   public readonly isDevelopment: boolean;
 
   constructor() {
-    this.apiUrl =
-      process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "") || "http://localhost:4002";
     this.appUrl =
       process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "") || "http://localhost:3002";
     this.isProduction = process.env.NODE_ENV === "production";

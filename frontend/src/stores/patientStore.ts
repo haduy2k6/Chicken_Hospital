@@ -20,8 +20,8 @@ export interface PatientUIState {
   submissionSuccessMsg: string | null;
   error: string | null;
 
-  addFiles: (newFiles: FileList | File[]) => void;
-  removeFile: (index: number) => void;
+  addFiles: (newFiles: FileList | File[], t?: StoreTranslate) => void;
+  removeFile: (index: number, t?: StoreTranslate) => void;
   clearFiles: () => void;
   setDragging: (dragging: boolean) => void;
   setError: (error: string | null) => void;
@@ -34,10 +34,15 @@ export interface PatientUIState {
 
 const MAX_FILES = 1;
 const ONLY_ONE_MSG = "Chỉ nhận 1 ảnh để xử lý, đã lấy ảnh đầu tiên bạn chọn.";
-
-const limit = (files: File[]): File[] => files.slice(0, MAX_FILES);
 const SAVE_FAIL_MSG =
   "Không thể lưu ảnh tạm trên thiết bị (có thể đã hết dung lượng). Bạn vẫn gửi được trong phiên này, nhưng ảnh sẽ mất nếu tải lại trang.";
+
+/** `t` lấy từ useTranslations("Patient.messages") ở component gọi. */
+type StoreTranslate = (key: string, values?: Record<string, string | number>) => string;
+const onlyOneImageMsg = (t?: StoreTranslate) => (t ? t("onlyOneImage") : ONLY_ONE_MSG);
+const saveFailMsg = (t?: StoreTranslate) => (t ? t("saveFailed") : SAVE_FAIL_MSG);
+
+const limit = (files: File[]): File[] => files.slice(0, MAX_FILES);
 
 const resolveStatus = (files: File[], current: Status): Status => {
   if (files.length === 0) return Status.empty;
@@ -49,10 +54,10 @@ const getActiveUserId = (): string => useAuthStore.getState().user?.userId || "g
 
 let loadSeq = 0;
 
-function persist(userId: string, files: File[]): void {
+function persist(userId: string, files: File[], t?: StoreTranslate): void {
   void appDb.savePatientFiles(userId, files).then((ok) => {
     if (!ok && usePatientStore.getState().currentUserId === userId) {
-      usePatientStore.setState({ error: SAVE_FAIL_MSG });
+      usePatientStore.setState({ error: saveFailMsg(t) });
     }
   });
 }
@@ -81,10 +86,10 @@ export const usePatientStore = create<PatientUIState>((set, get) => {
     });
   }
 
-  const touch = (updated: File[], extra: Partial<PatientUIState> = {}) => {
+  const touch = (updated: File[], extra: Partial<PatientUIState> = {}, t?: StoreTranslate) => {
     const userId = getActiveUserId();
     set((s) => ({ files: updated, currentUserId: userId, status: resolveStatus(updated, s.status), isLoaded: true, ...extra }));
-    persist(userId, updated);
+    persist(userId, updated, t);
     syncBus.broadcast({ type: "PATIENT_FILES_UPDATED", payload: { userId, count: updated.length } });
   };
 
@@ -122,17 +127,21 @@ export const usePatientStore = create<PatientUIState>((set, get) => {
       });
     },
 
-    addFiles: (newFiles) => {
+    addFiles: (newFiles, t) => {
         const incoming = Array.from(newFiles);
         if (incoming.length === 0) return;
 
-        touch(limit(incoming), {
-          submissionSuccessMsg: null,
-          error: incoming.length > MAX_FILES ? ONLY_ONE_MSG : null,
-        });
+        touch(
+          limit(incoming),
+          {
+            submissionSuccessMsg: null,
+            error: incoming.length > MAX_FILES ? onlyOneImageMsg(t) : null,
+          },
+          t,
+        );
       },
 
-    removeFile: (index) => touch(get().files.filter((_, i) => i !== index)),
+    removeFile: (index, t) => touch(get().files.filter((_, i) => i !== index), {}, t),
 
     clearFiles: () => {
       const userId = getActiveUserId();

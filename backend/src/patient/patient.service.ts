@@ -1,20 +1,19 @@
-// src/patient/patient.service.ts
 import 'multer';
 import { randomUUID } from 'crypto';
 import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { DataSource, EntityManager } from 'typeorm';
-import { AiAnalysis, AnalysisStatus } from '../Entity-User/AiAnalysis.entity.js';
-import { Appointment, AppointmentStatus } from '../Entity-User/Appointment.entity.js';
-import { CaseImage } from '../Entity-User/CaseImage.entity.js';
-import { CaseStatus, MedicalCase } from '../Entity-User/MedicalCase.entity.js';
-import { Gender, PatientProfile } from '../Entity-User/Patient.entity.js';
-import { Specialty } from '../Entity-User/Specialty.entity.js';
+import { AiAnalysis, AnalysisStatus } from '../entities/ai-analysis.entity.js';
+import { Appointment, AppointmentStatus } from '../entities/appointment.entity.js';
+import { CaseImage } from '../entities/case-image.entity.js';
+import { CaseStatus, MedicalCase } from '../entities/medical-case.entity.js';
+import { Gender, PatientProfile } from '../entities/patient.entity.js';
+import { Specialty } from '../entities/specialty.entity.js';
 import { AiAnalysisService } from '../case-support/ai-analysis.service.js';
 import { AuditService } from '../case-support/audit.service.js';
 import { INTAKE, IntakeDef, validateIntake } from '../case-support/intake-schema.js';
 import { StorageService } from '../case-support/storage.service.js';
-import { IMAGE_EXT, sniffImageMime } from '../common/image-type.util.js';
-import { doctorLabel } from '../scheduling/scheduling.service.js';
+import { doctorLabel } from '../common/utils/doctor-label.util.js';
+import { IMAGE_EXT, sniffImageMime } from '../common/utils/image-type.util.js';
 import { QuotaCase, buildQuota } from './case-quota.util.js';
 
 const isActive = (a: Appointment) => a.status === AppointmentStatus.SCHEDULED || a.status === AppointmentStatus.CONFIRMED;
@@ -116,7 +115,7 @@ export class PatientService {
   // ------------------------------------------------------------ gửi hồ sơ
 
   async createPatientRecord(userId: string, files: Express.Multer.File[], body: Record<string, unknown>) {
-    const def = INTAKE[typeof body.specialty === 'string' ? body.specialty : 'oncology'];
+    const def = typeof body.specialty === 'string' ? INTAKE[body.specialty] : undefined;
     if (!def) throw new BadRequestException('Chuyên khoa không hợp lệ');
     const intake = validateIntake(def, body);
     if (def.requiresImages && files.length === 0) throw new BadRequestException('Cần tải lên ít nhất 1 ảnh');
@@ -241,9 +240,15 @@ export class PatientService {
       .setLock('pessimistic_write')
       .where('p.userId = :userId', { userId })
       .getOne();
-    if (found) return found;
-
     const g = (Object.values(Gender) as string[]).includes(gender) ? (gender as Gender) : Gender.OTHER;
+    if (found) {
+      if (found.gender !== g) {
+        found.gender = g;
+        await m.save(found);
+      }
+      return found;
+    }
+
     return m.save(m.create(PatientProfile, { userId, gender: g }));
   }
 

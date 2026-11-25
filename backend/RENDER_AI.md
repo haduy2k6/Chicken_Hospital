@@ -9,14 +9,31 @@ Set these values in the NestJS service:
 ```text
 NODE_ENV=production
 PORT=10000
-FRONT_ORIGINS=https://chicken-hospital-gamma.vercel.app
-GOOGLE_CALLBACK_URL=https://chicken-hospital.onrender.com/auth/google/callback
+FRONT=https://chicken-hospital-gamma.vercel.app
+GOOGLE_CALLBACK_URL=https://chicken-hospital-gamma.vercel.app/api/auth/google/callback
 AI_SERVICE_URL=http://<AI-INTERNAL-HOST>:10000
 AI_SERVICE_KEY=<new shared service-to-service secret>
 AI_CALLBACK_SECRET=<new shared callback secret, different from AI_SERVICE_KEY>
 ```
 
+Optional backpressure on NestJS (defaults shown; tune together with the AI service below):
+
+```text
+AI_SUBMIT_TIMEOUT_MS=12000
+AI_DISPATCH_PACING_MS=8000
+AI_DISPATCH_BATCH_PER_RUN=5
+AI_RESUBMIT_COOLDOWN_MS=600000
+AI_MAX_RETRY=2
+AI_FAIL_AFTER_MS=2700000
+AI_CIRCUIT_BASE_OPEN_MS=60000
+AI_CIRCUIT_MAX_OPEN_MS=600000
+```
+
 `<AI-INTERNAL-HOST>` is the Internal Address shown by Render for the private AI service. Do not use `localhost:8000` on Render.
+
+Google OAuth uses the proxy flow: the browser opens `/api/auth/google` on the Vercel site, Google returns to
+`GOOGLE_CALLBACK_URL` on that same site, and Next.js rewrites `/api/*` to this service via `BACKEND_URL`.
+Register the same Vercel callback URL in Google Cloud Console. Cookies are `sameSite=lax`.
 
 ## AI service variables on Render
 

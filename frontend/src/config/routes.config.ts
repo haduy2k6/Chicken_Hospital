@@ -17,10 +17,8 @@ export const APP_ROUTES = {
 export const API_ROUTES = {
   BASE_URL: ENV.apiUrl,
   AUTH: {
-    GOOGLE_LOGIN: (locale = "vi", returnUrl?: string) =>
-      `${ENV.apiUrl}/auth/google?locale=${encodeURIComponent(locale)}${
-        returnUrl ? `&returnUrl=${encodeURIComponent(returnUrl)}` : ""
-      }`,
+    /** Luôn đi qua rewrite /api của Next.js (cùng site với cookie). Mở bằng window.location, không fetch. Backend tự redirect về FRONT + locale. */
+    GOOGLE_LOGIN: (locale: string) => `${ENV.apiUrl}/auth/google?locale=${encodeURIComponent(locale)}`,
     REFRESH: "/auth/refresh",
     LOGOUT: "/auth/logout",
   },
@@ -30,6 +28,7 @@ export const API_ROUTES = {
     HISTORY: "/patient/history",
     DOCTORS: "/patient/doctors",
     APPOINTMENTS: "/patient/appointments",
+    CANCEL_APPOINTMENT: (id: string) => `/patient/appointments/${id}/cancel`,
     CONFIRM_REFERRAL: (caseId: string) => `/patient/cases/${caseId}/confirm-referral`,
   },
   DOCTOR: {

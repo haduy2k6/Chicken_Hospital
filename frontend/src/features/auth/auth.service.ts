@@ -8,7 +8,7 @@ export class AuthService {
   public loginWithGoogle(customLocale?: string): void {
     if (typeof window === "undefined") return;
     const locale = customLocale || useUiStore.getState().language || "vi";
-    window.location.href = API_ROUTES.AUTH.GOOGLE_LOGIN(locale, window.location.origin);
+    window.location.href = API_ROUTES.AUTH.GOOGLE_LOGIN(locale);
   }
 
   /** Báo server hủy refresh token + cookie, rồi dọn toàn bộ cache, token, nháp IndexedDB ở client */

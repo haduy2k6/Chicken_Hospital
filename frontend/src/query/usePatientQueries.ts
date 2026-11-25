@@ -51,14 +51,18 @@ export function usePatientQuota() {
   return useMemo(() => ({ ...(data?.quota ?? NO_QUOTA), isLoading, known: data !== undefined }), [data, isLoading]);
 }
 
-export function useSubmitPatientMutation() {
+/** `t` lấy từ useTranslations("Patient") ở component gọi. */
+type PatientTranslate = (key: string, values?: Record<string, string | number>) => string;
+
+export function useSubmitPatientMutation(t?: PatientTranslate) {
   const queryClient = useQueryClient();
 
   return useMutation<PatientSubmissionResponse, Error, PatientSubmissionPayload>({
     mutationFn: (payload) => patientService.submitScreeningData(payload),
     onSuccess: (res) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.patient.all });
-      syncBus.broadcast({ type: "PATIENT_SUBMITTED", payload: { message: res.message || "Đã gửi hồ sơ sàng lọc thành công!" } });
+      const fallback = t ? t("submission.success") : "Đã gửi hồ sơ sàng lọc thành công!";
+      syncBus.broadcast({ type: "PATIENT_SUBMITTED", payload: { message: res.message || fallback } });
     },
   });
 }

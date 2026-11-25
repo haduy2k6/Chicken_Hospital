@@ -31,8 +31,8 @@
     "HeroSection1": {
       "headline": "Tất cả quy trình tầm soát sức khỏe, hoàn toàn tự động.",
       "subheadline": "Từ phân tích hình ảnh nội soi vòm họng bằng AI đến đánh giá nguy cơ bệnh thận và kết nối bác sĩ chuyên khoa, bảo vệ sức khỏe của bạn với độ chính xác cao và tối ưu thời gian.",
-      "signUpGoogle": "Sign up with Google",
-      "signUpMicrosoft": "Sign up with Microsoft",
+      "signUpGoogle": "Đăng ký với Google",
+      "signUpMicrosoft": "Đăng ký với Microsoft",
       "subLink": "Đăng ký nhanh với email • Miễn phí sàng lọc ban đầu",
       "features": {
         "speed": {
@@ -244,7 +244,8 @@
       "tooLarge": "{name}: vượt quá {max}MB",
       "selected": "Đã chọn {count} hình ảnh",
       "clearAll": "Xóa tất cả",
-      "remove": "Xóa {name}"
+      "remove": "Xóa {name}",
+      "disabled": "Chức năng tạm khóa - Đang chờ kết quả chẩn đoán trước"
     },
     "actions": {
       "next": "Tiếp theo",
@@ -267,7 +268,8 @@
         "female": "Nữ",
         "low": "Ít",
         "moderate": "Vừa",
-        "high": "Nhiều"
+        "high": "Nhiều",
+        "other": "Khác"
       },
       "fields": {
         "age": "Tuổi",
@@ -287,7 +289,29 @@
         "patches": "Mảng trắng / đỏ trong miệng"
       }
     },
-    "quotaUsed": "Đã dùng {used}/{max} lượt gửi hồ sơ."
+    "quotaUsed": "Đã dùng {used}/{max} lượt gửi hồ sơ.",
+    "messages": {
+      "onlyOneImage": "Chỉ nhận 1 ảnh để xử lý, đã lấy ảnh đầu tiên bạn chọn.",
+      "saveFailed": "Không thể lưu ảnh tạm trên thiết bị (có thể đã hết dung lượng). Bạn vẫn gửi được trong phiên này, nhưng ảnh sẽ mất nếu tải lại trang."
+    },
+    "quota": {
+      "blocked": "Bạn đã dùng hết lượt gửi. Hãy xác nhận chuyển tuyến hoặc chờ hoàn tất lịch hẹn ở trang Lịch khám để giải phóng lượt.",
+      "eviction": {
+        "reviewed": "Bạn đã dùng hết lượt gửi. Hồ sơ {caseId} (đã có kết luận, cũ nhất) sẽ tự động bị xóa để nhường chỗ cho hồ sơ mới.",
+        "pending": "Tất cả hồ sơ đều đang chờ bác sĩ. Hồ sơ gửi gần nhất {caseId} sẽ bị thay thế bằng hồ sơ mới."
+      },
+      "confirmContinue": "Tiếp tục gửi?"
+    },
+    "pending": {
+      "error": "Bạn đang có hồ sơ chẩn đoán đang chờ xử lý. Vui lòng đợi đến khi có kết quả trước khi gửi tiếp.",
+      "title": "Hồ sơ chẩn đoán ung bướu của bạn đang được hệ thống phân tích.",
+      "body": "Hệ thống đang xử lý và đánh giá ảnh chẩn đoán của bạn. Vui lòng chờ đến khi có kết quả tại trang Lịch Khám trước khi gửi hồ sơ chẩn đoán mới.",
+      "link": "Xem tiến trình tại Lịch Khám"
+    },
+    "submission": {
+      "success": "Gửi hồ sơ và hình ảnh thành công!",
+      "evicted": "Đã xóa hồ sơ cũ {caseId}"
+    }
   },
   "Auth": {
     "close": "Đóng",
@@ -342,5 +366,202 @@
     "noAvailable": "Không có bác sĩ nào còn lịch trống ngày này. Hãy chọn ngày khác.",
     "morning": "Sáng (8h–11h)",
     "afternoon": "Chiều (14h–17h)"
+  },
+  "Common": {
+    "errors": {
+      "generic": "Đã có lỗi xảy ra",
+      "conflict": {
+        "SLOT_TAKEN": "Khung giờ hẹn đã có lịch hoặc bác sĩ đã đủ 3 ca trong ngày. Hãy chọn giờ khác.",
+        "VERSION_CONFLICT": "Ca bệnh vừa được cập nhật ở nơi khác. Hãy xem lại nội dung mới rồi gửi lại."
+      }
+    },
+    "ai": {
+      "malignant": "Mô hình ghi nhận tín hiệu cần bác sĩ đánh giá",
+      "benign": "Mô hình chưa ghi nhận tín hiệu; không loại trừ bệnh",
+      "unknown": "Đã có đầu ra từ mô hình"
+    }
+  },
+  "DoctorQueue": {
+    "filter": {
+      "label": "Bộ lọc",
+      "status": "Trạng thái:",
+      "specialty": "Chuyên khoa:"
+    },
+    "status": {
+      "all": "Tất cả",
+      "pending": "Đang chờ",
+      "reviewed": "Đã duyệt",
+      "escalated": "Chuyển tuyến"
+    },
+    "specialty": {
+      "all": "Mọi khoa",
+      "oncology": "Ung bướu",
+      "nephrology": "Thận - Tiết niệu",
+      "cardiology": "Tim mạch"
+    },
+    "count": "{count} ca",
+    "caseId": "Mã ca: #{id}",
+    "age": "{age} tuổi",
+    "viewCase": "Xem hồ sơ và đánh giá",
+    "loading": "Đang tải danh sách ca bệnh...",
+    "empty": {
+      "title": "Không có ca bệnh khớp bộ lọc hiện tại",
+      "hint": "Đổi trạng thái hoặc chuyên khoa để xem ca khác."
+    },
+    "ai": {
+      "processing": "AI đang phân tích",
+      "failed": "AI phân tích lỗi",
+      "noScore": "Chưa có điểm AI",
+      "score": "Điểm model: {score}%"
+    }
+  },
+  "DoctorWorkspace": {
+    "badge": "Khu vực bác sĩ chuyên khoa",
+    "title": "Hàng đợi ca khám",
+    "doctorLabel": "Bác sĩ:",
+    "fallbackDoctor": "Bác sĩ chuyên khoa",
+    "pendingCount": "{count} ca đang chờ đánh giá",
+    "noPending": "Không còn ca nào chờ đánh giá",
+    "loading": "Đang tải...",
+    "refresh": "Làm mới danh sách",
+    "toast": {
+      "escalated": "Đã chuyển tuyến ca #{caseId}. Ca không còn trong danh sách của bạn.",
+      "reviewed": "Đã lưu kết luận cho ca #{caseId}."
+    },
+    "errors": {
+      "submit": "Không gửi được kết luận. Hãy thử lại.",
+      "queueLoad": "Không tải được danh sách ca bệnh.",
+      "detailLoad": "Không tải được hồ sơ ca bệnh."
+    }
+  },
+  "DoctorReview": {
+    "title": "Hồ sơ và đánh giá chuyên môn",
+    "newerVersion": "Ca này vừa được cập nhật ở nơi khác. Nội dung bên dưới có thể đã đổi.",
+    "acceptNewVersion": "Đã xem, dùng bản mới nhất",
+    "patientLabel": "Bệnh nhân:",
+    "aiSummary": "Phân tích AI tổng hợp:",
+    "retry": "Tải lại hồ sơ",
+    "loading": "Đang tải hồ sơ ca bệnh...",
+    "symptoms": {
+      "title": "Triệu chứng và khai báo của bệnh nhân",
+      "noNote": "Bệnh nhân không ghi chú thêm."
+    },
+    "images": {
+      "title": "Ảnh nội soi và tài liệu ({count})",
+      "openDocument": "Mở tài liệu",
+      "analysisFailed": "AI lỗi",
+      "processing": "Đang phân tích",
+      "empty": "Ca này không có ảnh hoặc tài liệu đính kèm",
+      "modelScore": "Model {score}%"
+    },
+    "processedNotice": "Ca này đã được xử lý, chỉ xem lại nội dung, không thể kết luận lần nữa.",
+    "notes": {
+      "label": "Nhận xét và kết luận chuyên môn",
+      "placeholder": "Nhập chẩn đoán lâm sàng, chỉ định cận lâm sàng hoặc dặn dò bệnh nhân..."
+    },
+    "action": {
+      "title": "Hướng xử lý",
+      "review": "Duyệt và hẹn tái khám",
+      "escalate": "Chuyển tuyến"
+    },
+    "followUp": {
+      "label": "Hẹn khám trực tiếp hoặc tái khám (không bắt buộc)",
+      "hint": "Lịch hẹn sẽ hiện trong hồ sơ theo dõi của bệnh nhân."
+    },
+    "referral": {
+      "label": "Chuyển đến bác sĩ hoặc khoa",
+      "placeholder": "Chọn người nhận...",
+      "unavailable": "Chưa tải được danh sách người nhận, không thể chuyển tuyến lúc này."
+    },
+    "submit": {
+      "escalate": "Gửi chuyển tuyến",
+      "review": "Lưu kết luận"
+    },
+    "preview": {
+      "score": "Điểm model (không phải xác suất bệnh): {score}%",
+      "analysisFailed": "AI phân tích ảnh này bị lỗi",
+      "processing": "AI đang phân tích ảnh này",
+      "gradcam": "Xem vùng AI chú ý (Grad-CAM)",
+      "original": "Xem ảnh gốc"
+    },
+    "errors": {
+      "invalidDate": "Ngày hẹn không hợp lệ",
+      "referralRequired": "Cần chọn bác sĩ hoặc khoa nhận khi chuyển tuyến"
+    }
+  },
+  "NephrologyForm": {
+    "badge": "Tầm soát bệnh thận mạn (CKD-EPI)",
+    "title": "Đánh Giá Chức Năng Lọc Thận Trực Tuyến",
+    "subtitle": "Nhập các chỉ số xét nghiệm để tính mức lọc cầu thận (eGFR theo CKD-EPI) và gửi hồ sơ cho bác sĩ chuyên khoa Thận thẩm định.",
+    "fields": {
+      "age": "Tuổi (năm)",
+      "gender": "Giới tính",
+      "creatinine": "Creatinine máu (mg/dL)",
+      "proteinuria": "Protein niệu",
+      "systolic": "Huyết áp tâm thu (mmHg)",
+      "diastolic": "Huyết áp tâm trương (mmHg)"
+    },
+    "options": {
+      "proteinuria": {
+        "negative": "Âm tính (Negative)",
+        "trace": "Vết (Trace)",
+        "1plus": "1+ (30 mg/dL)",
+        "2plus": "2+ (100 mg/dL)",
+        "3plus": "3+ (300 mg/dL trở lên)"
+      }
+    },
+    "calculate": "Tính eGFR",
+    "result": {
+      "title": "Kết quả đánh giá mức lọc cầu thận",
+      "unit": "mL/phút/1.73m²",
+      "disclaimer": "* Kết quả mang tính hỗ trợ sàng lọc. Hãy gửi hồ sơ để bác sĩ chuyên khoa Thận đánh giá.",
+      "viewRecords": "Xem hồ sơ của tôi"
+    },
+    "send": "Gửi hồ sơ cho bác sĩ Thận",
+    "sendSignIn": "Đăng nhập để gửi hồ sơ cho bác sĩ Thận",
+    "errors": {
+      "notPatient": "Chỉ tài khoản bệnh nhân mới gửi được hồ sơ."
+    },
+    "sent": "Đã gửi hồ sơ cho bác sĩ thận.",
+    "stages": {
+      "g1": {
+        "stage": "Bình thường / Tổn thương thận nhẹ có eGFR bình thường (G1)",
+        "recommendations": ["Duy trì uống đủ 2 - 2.5 lít nước mỗi ngày", "Kiểm tra sức khỏe định kỳ mỗi 12 tháng"]
+      },
+      "g2": {
+        "stage": "Suy giảm nhẹ mức lọc cầu thận (CKD G2)",
+        "recommendations": [
+          "Kiểm soát chặt chẽ huyết áp dưới 130/80 mmHg",
+          "Giảm lượng muối ăn (< 5g/ngày) và hạn chế thực phẩm siêu chế biến",
+          "Tái khám và định lượng Creatinine huyết thanh sau 3 - 6 tháng"
+        ]
+      },
+      "g3a": {
+        "stage": "Suy giảm mức lọc cầu thận trung bình nhẹ (CKD G3a)",
+        "recommendations": [
+          "Khám chuyên khoa Thận - Tiết niệu để xác định nguyên nhân gốc",
+          "Đo tỷ lệ Albumin/Creatinine nước tiểu (ACR) 24h",
+          "Điều chỉnh liều lượng các thuốc thải trừ qua thận"
+        ]
+      },
+      "g3b": {
+        "stage": "Suy giảm mức lọc cầu thận trung bình nặng (CKD G3b)",
+        "recommendations": [
+          "Chuyển tuyến khám bác sĩ chuyên khoa Thận",
+          "Kiểm soát biến chứng thiếu máu, toan chuyển hóa và chuyển hóa khoáng xương"
+        ]
+      },
+      "g4": {
+        "stage": "Suy thận nặng tiến triển (CKD G4)",
+        "recommendations": [
+          "Cần hội chẩn chuyên sâu để chuẩn bị kế hoạch lọc máu hoặc ghép thận",
+          "Tuân thủ chế độ ăn kiêng Kali, Phosphat và đạm nghiêm ngặt"
+        ]
+      },
+      "g5": {
+        "stage": "Suy thận giai đoạn cuối (CKD G5 / ESRD)",
+        "recommendations": ["Chỉ định điều trị thay thế thận (Chạy thận nhân tạo / Lọc màng bụng / Ghép)"]
+      }
+    }
   }
 }

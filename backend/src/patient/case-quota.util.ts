@@ -1,5 +1,5 @@
 // src/patient/case-quota.util.ts
-import { CaseStatus } from '../Entity-User/MedicalCase.entity.js';
+import { CaseStatus } from '../entities/medical-case.entity.js';
 
 /** Mỗi bệnh nhân tối đa 4 yêu cầu khám (tổng các khoa). Muốn tính theo từng khoa: lọc `cases` theo specialtyId trước khi gọi. */
 export const MAX_CASES_PER_PATIENT = 4;
