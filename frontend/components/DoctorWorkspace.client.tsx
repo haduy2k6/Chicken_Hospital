@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Stethoscope, AlertTriangle, RefreshCw, CheckCircle2, X } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { useDoctorStore } from "@/src/stores/doctorStore";
 import { useAuthStore } from "@/src/stores/authStore";
 import {
@@ -17,6 +18,9 @@ import { PatientCaseDetailPanel } from "./PatientCaseDetailPanel";
 import { DoctorSchedulePanel } from "./DoctorSchedulePanel.client";
 
 export function DoctorWorkspace() {
+  const t = useTranslations("DoctorWorkspace");
+  const tErrors = useTranslations("Common.errors");
+  const tReviewErrors = useTranslations("DoctorReview.errors");
   const filterStatus = useDoctorStore((s) => s.filterStatus);
   const filterSpecialty = useDoctorStore((s) => s.filterSpecialty);
   const selectedCaseId = useDoctorStore((s) => s.selectedCaseId);
@@ -31,7 +35,7 @@ export function DoctorWorkspace() {
   const { data: detail, isLoading: isDetailLoading, error: detailError, refetch: refetchDetail } = useDoctorCaseDetailQuery(selectedCaseId);
 
   const prefetchCase = usePrefetchDoctorCase();
-  const reviewMutation = useReviewCaseMutation();
+  const reviewMutation = useReviewCaseMutation(tReviewErrors);
 
   const items = queueData?.items ?? [];
   const pendingCount = queueData?.pendingCount ?? 0;
@@ -99,16 +103,16 @@ export function DoctorWorkspace() {
       await selectCaseId(null);
       showToast(
         draft.status === "escalated"
-          ? `Đã chuyển tuyến ca #${caseId.slice(0, 8)}. Ca không còn trong danh sách của bạn.`
-          : `Đã lưu kết luận cho ca #${caseId.slice(0, 8)}.`
+          ? t("toast.escalated", { caseId: caseId.slice(0, 8) })
+          : t("toast.reviewed", { caseId: caseId.slice(0, 8) })
       );
     } catch (err: unknown) {
-      setErrorMessage(errMsg(err, "Không gửi được kết luận. Hãy thử lại."));
+      setErrorMessage(errMsg(err, t("errors.submit"), tErrors));
     }
   };
 
-  const error = errorMessage ?? (queueError ? errMsg(queueError, "Không tải được danh sách ca bệnh.") : null);
-  const loadError = detailError ? errMsg(detailError, "Không tải được hồ sơ ca bệnh.") : null;
+  const error = errorMessage ?? (queueError ? errMsg(queueError, t("errors.queueLoad"), tErrors) : null);
+  const loadError = detailError ? errMsg(detailError, t("errors.detailLoad"), tErrors) : null;
 
   return (
     <div className="w-full space-y-6">
@@ -116,18 +120,18 @@ export function DoctorWorkspace() {
         <div className="space-y-1">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-100 text-cyan-900 text-xs font-bold">
             <Stethoscope className="w-3.5 h-3.5 text-cyan-700" />
-            <span>Khu vực bác sĩ chuyên khoa</span>
+            <span>{t("badge")}</span>
           </div>
-          <h1 className="text-2xl sm:text-3xl font-black text-stone-900 tracking-tight">Hàng đợi ca khám</h1>
+          <h1 className="text-2xl sm:text-3xl font-black text-stone-900 tracking-tight">{t("title")}</h1>
           <p className="text-xs sm:text-sm text-stone-500">
-            Bác sĩ: <span className="font-semibold text-stone-800">{userName || "Bác sĩ chuyên khoa"}</span>
+            {t("doctorLabel")} <span className="font-semibold text-stone-800">{userName || t("fallbackDoctor")}</span>
             {" · "}
             {pendingCount > 0 ? (
-              <span className="text-amber-700 font-bold">{pendingCount} ca đang chờ đánh giá</span>
+              <span className="text-amber-700 font-bold">{t("pendingCount", { count: pendingCount })}</span>
             ) : queueData ? (
-              <span className="text-emerald-700 font-medium">Không còn ca nào chờ đánh giá</span>
+              <span className="text-emerald-700 font-medium">{t("noPending")}</span>
             ) : (
-              <span className="text-stone-400">Đang tải...</span>
+              <span className="text-stone-400">{t("loading")}</span>
             )}
           </p>
         </div>
@@ -139,7 +143,7 @@ export function DoctorWorkspace() {
           className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-stone-100 hover:bg-stone-200 text-stone-800 text-xs font-bold transition-colors cursor-pointer disabled:opacity-50"
         >
           <RefreshCw className={`w-3.5 h-3.5 ${isQueueLoading || isRefetching ? "animate-spin" : ""}`} />
-          <span>Làm mới danh sách</span>
+          <span>{t("refresh")}</span>
         </button>
       </div>
 

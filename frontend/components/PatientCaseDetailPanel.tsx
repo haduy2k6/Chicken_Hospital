@@ -14,8 +14,9 @@ import {
   FileIcon,
   RefreshCw,
 } from "lucide-react";
+import { useTranslations } from "next-intl";
 import {
-  GENDER_LABEL,
+  genderLabel,
   type CaseImageDto,
   type DoctorCaseDetail,
   type PatientQueueItem,
@@ -59,6 +60,11 @@ export function PatientCaseDetailPanel({
   onSubmit,
   onClose,
 }: Props) {
+  const t = useTranslations("DoctorReview");
+  const tQueue = useTranslations("DoctorQueue");
+  const tAi = useTranslations("Common.ai");
+  const tOptions = useTranslations("Patient.form.options");
+  const tRoot = useTranslations();
   const reviewDraft = useDoctorStore((s) => s.reviewDraft);
   const updateDraft = useDoctorStore((s) => s.updateDraft);
 
@@ -105,7 +111,7 @@ export function PatientCaseDetailPanel({
     });
   };
 
-  const intakeEntries = detail ? describeIntake(detail.intakeData ?? {}) : [];
+  const intakeEntries = detail ? describeIntake(detail.intakeData ?? {}, tRoot) : [];
 
   return (
     <>
@@ -114,8 +120,10 @@ export function PatientCaseDetailPanel({
           <div className="flex items-center gap-2">
             <FileText className="w-5 h-5 text-cyan-700" />
             <div>
-              <h3 className="font-black text-stone-900 text-base">Hồ sơ và đánh giá chuyên môn</h3>
-              <p className="text-[11px] text-stone-400 font-mono">Mã ca: #{info.id.slice(0, 8)}</p>
+              <h3 className="font-black text-stone-900 text-base">{t("title")}</h3>
+              <p className="text-[11px] text-stone-400 font-mono">
+                {tQueue("caseId", { id: info.id.slice(0, 8) })}
+              </p>
             </div>
           </div>
           <button
@@ -132,13 +140,13 @@ export function PatientCaseDetailPanel({
           <div className="p-3 rounded-2xl bg-amber-50 border border-amber-300 text-xs text-amber-900 flex items-start gap-2">
             <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
             <div className="space-y-1.5">
-              <p>Ca này vừa được cập nhật ở nơi khác. Nội dung bên dưới có thể đã đổi.</p>
+              <p>{t("newerVersion")}</p>
               <button
                 type="button"
                 onClick={onAcceptNewVersion}
                 className="font-bold underline cursor-pointer"
               >
-                Đã xem, dùng bản mới nhất
+                {t("acceptNewVersion")}
               </button>
             </div>
           </div>
@@ -146,13 +154,13 @@ export function PatientCaseDetailPanel({
 
         <div className="bg-stone-50 rounded-2xl p-4 space-y-2 border border-stone-100 text-xs sm:text-sm">
           <div className="flex justify-between gap-3">
-            <span className="text-stone-500">Bệnh nhân:</span>
+            <span className="text-stone-500">{t("patientLabel")}</span>
             <span className="font-bold text-stone-900 text-right">
-              {info.name} ({info.age} tuổi, {GENDER_LABEL[info.gender]})
+              {info.name} ({tQueue("age", { age: info.age })}, {genderLabel(info.gender, tOptions)})
             </span>
           </div>
           <div className="flex justify-between items-center pt-1.5 border-t border-stone-200/60">
-            <span className="text-stone-500 font-medium">Phân tích AI tổng hợp:</span>
+            <span className="text-stone-500 font-medium">{t("aiSummary")}</span>
             <AiRiskBadge score={info.aiRiskScore} status={info.aiStatus} />
           </div>
         </div>
@@ -166,20 +174,20 @@ export function PatientCaseDetailPanel({
               className="inline-flex items-center gap-1.5 font-bold cursor-pointer"
             >
               <RefreshCw className="w-3.5 h-3.5" />
-              Tải lại hồ sơ
+              {t("retry")}
             </button>
           </div>
         ) : isLoading || !detail ? (
           <div className="py-10 text-center text-sm text-stone-500">
             <Loader2 className="w-6 h-6 mx-auto animate-spin text-cyan-600 mb-2" />
-            Đang tải hồ sơ ca bệnh...
+            {t("loading")}
           </div>
         ) : (
           <>
             <div className="space-y-2">
               <div className="flex items-center gap-1.5 text-xs font-bold text-stone-800">
                 <ClipboardList className="w-4 h-4 text-cyan-700" />
-                <span>Triệu chứng và khai báo của bệnh nhân</span>
+                <span>{t("symptoms.title")}</span>
               </div>
               <div className="p-3.5 rounded-2xl bg-cyan-50/40 border border-cyan-100 space-y-3 text-xs text-stone-700">
                 {detail.symptoms.length > 0 && (
@@ -196,7 +204,7 @@ export function PatientCaseDetailPanel({
                 )}
 
                 <p className="leading-relaxed text-stone-600">
-                  {detail.patientNote?.trim() || "Bệnh nhân không ghi chú thêm."}
+                  {detail.patientNote?.trim() || t("symptoms.noNote")}
                 </p>
 
                 {intakeEntries.length > 0 && (
@@ -215,7 +223,7 @@ export function PatientCaseDetailPanel({
             <div className="space-y-2">
               <div className="flex items-center gap-1.5 text-xs font-bold text-stone-800">
                 <ImageIcon className="w-4 h-4 text-cyan-700" />
-                <span>Ảnh nội soi và tài liệu ({detail.images.length})</span>
+                <span>{t("images.title", { count: detail.images.length })}</span>
               </div>
 
               {detail.images.length > 0 ? (
@@ -230,7 +238,7 @@ export function PatientCaseDetailPanel({
                         className="aspect-square rounded-xl border border-stone-200 bg-stone-50 flex flex-col items-center justify-center gap-1 text-[11px] font-medium text-stone-600 hover:bg-stone-100"
                       >
                         <FileIcon className="w-5 h-5 text-stone-400" />
-                        Mở tài liệu
+                        {t("images.openDocument")}
                       </a>
                     ) : (
                       <button
@@ -253,10 +261,10 @@ export function PatientCaseDetailPanel({
                         {img.analysis && (
                           <span className="absolute bottom-0 inset-x-0 bg-black/65 text-white text-[10px] font-semibold px-1.5 py-0.5 truncate">
                             {img.analysis.status === "completed" && img.analysis.riskScore !== null
-                              ? `Model ${Math.round(img.analysis.riskScore * 10) / 10}%`
+                              ? t("images.modelScore", { score: Math.round(img.analysis.riskScore * 10) / 10 })
                               : img.analysis.status === "failed"
-                                ? "AI lỗi"
-                                : "Đang phân tích"}
+                                ? t("images.analysisFailed")
+                                : t("images.processing")}
                             {img.analysis.gradcamUrl ? " · Grad-CAM" : ""}
                           </span>
                         )}
@@ -266,14 +274,14 @@ export function PatientCaseDetailPanel({
                 </div>
               ) : (
                 <div className="p-4 rounded-2xl border border-dashed border-stone-200 text-center text-xs text-stone-400">
-                  Ca này không có ảnh hoặc tài liệu đính kèm
+                  {t("images.empty")}
                 </div>
               )}
             </div>
 
             {detail.status !== "pending" ? (
               <p className="p-3.5 rounded-2xl bg-stone-50 border border-stone-200 text-xs text-stone-600">
-                Ca này đã được xử lý, chỉ xem lại nội dung, không thể kết luận lần nữa.
+                {t("processedNotice")}
               </p>
             ) : (
             <form
@@ -285,12 +293,12 @@ export function PatientCaseDetailPanel({
             >
               <div>
                 <label htmlFor="review-notes" className="block text-xs font-bold text-stone-700 mb-1.5">
-                  Nhận xét và kết luận chuyên môn
+                  {t("notes.label")}
                 </label>
                 <textarea
                   id="review-notes"
                   rows={4}
-                  placeholder="Nhập chẩn đoán lâm sàng, chỉ định cận lâm sàng hoặc dặn dò bệnh nhân..."
+                  placeholder={t("notes.placeholder")}
                   value={reviewDraft.notes}
                   onChange={(e) => updateDraft({ notes: e.target.value })}
                   className="w-full p-3 rounded-xl border border-stone-200 text-xs sm:text-sm text-stone-900 focus:outline-none focus:ring-2 focus:ring-cyan-600 bg-stone-50/50"
@@ -299,7 +307,7 @@ export function PatientCaseDetailPanel({
               </div>
 
               <div>
-                <span className="block text-xs font-bold text-stone-700 mb-1.5">Hướng xử lý</span>
+                <span className="block text-xs font-bold text-stone-700 mb-1.5">{t("action.title")}</span>
                 <div className="grid grid-cols-2 gap-2">
                   <button
                     type="button"
@@ -316,7 +324,7 @@ export function PatientCaseDetailPanel({
                         : "bg-stone-100 text-stone-700 hover:bg-stone-200"
                     }`}
                   >
-                    Duyệt và hẹn tái khám
+                    {t("action.review")}
                   </button>
                   <button
                     type="button"
@@ -333,7 +341,7 @@ export function PatientCaseDetailPanel({
                         : "bg-stone-100 text-stone-700 hover:bg-stone-200"
                     }`}
                   >
-                    Chuyển tuyến
+                    {t("action.escalate")}
                   </button>
                 </div>
               </div>
@@ -345,7 +353,7 @@ export function PatientCaseDetailPanel({
                     className="flex items-center gap-1.5 text-xs font-bold text-emerald-900"
                   >
                     <Calendar className="w-3.5 h-3.5 text-emerald-700" />
-                    <span>Hẹn khám trực tiếp hoặc tái khám (không bắt buộc)</span>
+                    <span>{t("followUp.label")}</span>
                   </label>
                   <input
                     id="follow-up"

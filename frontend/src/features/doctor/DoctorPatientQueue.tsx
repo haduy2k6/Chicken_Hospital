@@ -1,6 +1,7 @@
 "use client";
 
 import { memo } from "react";
+import { useLocale, useTranslations } from "next-intl";
 import {
   Filter,
   CheckCircle2,
@@ -10,31 +11,20 @@ import {
   CircleSlash,
 } from "lucide-react";
 import {
-  GENDER_LABEL,
+  genderLabel,
   type AiStatus,
   type PatientQueueItem,
   type SpecialtyFilter,
   type StatusFilter,
 } from "@/src/features/doctor/types";
 
-const STATUS_FILTERS: { id: StatusFilter; label: string }[] = [
-  { id: "all", label: "Tất cả" },
-  { id: "pending", label: "Đang chờ" },
-  { id: "reviewed", label: "Đã duyệt" },
-  { id: "escalated", label: "Chuyển tuyến" },
-];
+const STATUS_FILTERS: StatusFilter[] = ["all", "pending", "reviewed", "escalated"];
+const SPECIALTY_FILTERS: SpecialtyFilter[] = ["all", "oncology", "nephrology", "cardiology"];
 
-const SPECIALTY_FILTERS: { id: SpecialtyFilter; label: string }[] = [
-  { id: "all", label: "Mọi khoa" },
-  { id: "oncology", label: "Ung bướu" },
-  { id: "nephrology", label: "Thận - Tiết niệu" },
-  { id: "cardiology", label: "Tim mạch" },
-];
-
-const STATUS_BADGE: Record<PatientQueueItem["status"], { label: string; cls: string }> = {
-  pending: { label: "Đang chờ", cls: "bg-amber-100 text-amber-900" },
-  reviewed: { label: "Đã duyệt", cls: "bg-emerald-100 text-emerald-900" },
-  escalated: { label: "Chuyển tuyến", cls: "bg-rose-100 text-rose-900" },
+const BADGE_CLASS: Record<PatientQueueItem["status"], string> = {
+  pending: "bg-amber-100 text-amber-900",
+  reviewed: "bg-emerald-100 text-emerald-900",
+  escalated: "bg-rose-100 text-rose-900",
 };
 
 export function AiRiskBadge({
@@ -44,11 +34,12 @@ export function AiRiskBadge({
   score: number | null;
   status: AiStatus;
 }) {
+  const t = useTranslations("DoctorQueue");
   if (status === "processing") {
     return (
       <span className="flex items-center gap-1 text-xs font-semibold text-stone-500">
         <Loader2 className="w-3.5 h-3.5 animate-spin" />
-        AI đang phân tích
+        {t("ai.processing")}
       </span>
     );
   }
@@ -56,16 +47,16 @@ export function AiRiskBadge({
     return (
       <span className="flex items-center gap-1 text-xs font-semibold text-amber-700">
         <CircleSlash className="w-3.5 h-3.5" />
-        AI phân tích lỗi
+        {t("ai.failed")}
       </span>
     );
   }
   if (score === null) {
-    return <span className="text-xs font-semibold text-stone-500">Chưa có điểm AI</span>;
+    return <span className="text-xs font-semibold text-stone-500">{t("ai.noScore")}</span>;
   }
   return (
     <span className="flex items-center gap-1 text-xs font-semibold text-stone-600">
-      Điểm model: {Math.round(score * 10) / 10}%
+      {t("ai.score", { score: Math.round(score * 10) / 10 })}
     </span>
   );
 }
@@ -78,7 +69,9 @@ interface RowProps {
 }
 
 const QueueRow = memo(function QueueRow({ item, isSelected, onSelect, onPrefetch }: RowProps) {
-  const badge = STATUS_BADGE[item.status];
+  const t = useTranslations("DoctorQueue");
+  const tOptions = useTranslations("Patient.form.options");
+  const locale = useLocale();
 
   return (
     <button
@@ -100,15 +93,17 @@ const QueueRow = memo(function QueueRow({ item, isSelected, onSelect, onPrefetch
               {item.name}
             </span>
             <span className="text-xs text-stone-500">
-              ({item.age} tuổi, {GENDER_LABEL[item.gender]})
+              ({t("age", { age: item.age })}, {genderLabel(item.gender, tOptions)})
             </span>
           </div>
-          <p className="text-xs text-stone-400">Mã ca: #{item.id.slice(0, 8)}</p>
+          <p className="text-xs text-stone-400">
+            {t("caseId", { id: item.id.slice(0, 8) })}
+          </p>
         </div>
 
         <div className="flex flex-col items-end gap-1.5 shrink-0">
-          <span className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full ${badge.cls}`}>
-            {badge.label}
+          <span className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full ${BADGE_CLASS[item.status]}`}>
+            {t(`status.${item.status}`)}
           </span>
           <AiRiskBadge score={item.aiRiskScore} status={item.aiStatus} />
         </div>
@@ -117,7 +112,7 @@ const QueueRow = memo(function QueueRow({ item, isSelected, onSelect, onPrefetch
       <div className="mt-3 pt-3 border-t border-stone-100 flex items-center justify-between text-xs text-stone-500">
         <span className="flex items-center gap-1">
           <Clock className="w-3.5 h-3.5" />
-          {new Date(item.submissionDate).toLocaleString("vi-VN", {
+          {new Date(item.submissionDate).toLocaleString(locale, {
             hour: "2-digit",
             minute: "2-digit",
             day: "2-digit",
@@ -126,7 +121,7 @@ const QueueRow = memo(function QueueRow({ item, isSelected, onSelect, onPrefetch
           })}
         </span>
         <span className="text-cyan-700 font-bold flex items-center gap-0.5">
-          Xem hồ sơ và đánh giá <ArrowUpRight className="w-3.5 h-3.5" />
+          {t("viewCase")} <ArrowUpRight className="w-3.5 h-3.5" />
         </span>
       </div>
     </button>
@@ -189,25 +184,29 @@ export function DoctorPatientQueue({
   onSelectCase,
   onPrefetchCase,
 }: DoctorPatientQueueProps) {
+  const t = useTranslations("DoctorQueue");
+  const statusOptions = STATUS_FILTERS.map((id) => ({ id, label: t(`status.${id}`) }));
+  const specialtyOptions = SPECIALTY_FILTERS.map((id) => ({ id, label: t(`specialty.${id}`) }));
+
   return (
     <div className="space-y-4">
       <div className="space-y-3 bg-white p-4 rounded-2xl border border-stone-200/80 shadow-xs">
         <div className="flex items-center justify-between gap-3">
           <span className="flex items-center gap-1.5 text-xs font-bold text-stone-500">
             <Filter className="w-3.5 h-3.5" />
-            Bộ lọc
+            {t("filter.label")}
           </span>
-          <span className="text-xs font-medium text-stone-400">{items.length} ca</span>
+          <span className="text-xs font-medium text-stone-400">{t("count", { count: items.length })}</span>
         </div>
         <FilterGroup
-          label="Trạng thái:"
-          options={STATUS_FILTERS}
+          label={t("filter.status")}
+          options={statusOptions}
           value={filterStatus}
           onChange={onSelectFilterStatus}
         />
         <FilterGroup
-          label="Chuyên khoa:"
-          options={SPECIALTY_FILTERS}
+          label={t("filter.specialty")}
+          options={specialtyOptions}
           value={filterSpecialty}
           onChange={onSelectFilterSpecialty}
         />
@@ -217,15 +216,15 @@ export function DoctorPatientQueue({
         {isLoading && items.length === 0 ? (
           <div className="bg-white rounded-3xl p-12 text-center border border-stone-200/80 shadow-xs">
             <Loader2 className="w-8 h-8 mx-auto animate-spin text-cyan-600 mb-3" />
-            <p className="text-sm font-semibold text-stone-600">Đang tải danh sách ca bệnh...</p>
+            <p className="text-sm font-semibold text-stone-600">{t("loading")}</p>
           </div>
         ) : items.length === 0 ? (
           <div className="bg-white rounded-3xl p-12 text-center border border-stone-200/80 shadow-xs">
             <CheckCircle2 className="w-10 h-10 mx-auto text-emerald-500 mb-2" />
             <p className="text-base font-bold text-stone-800">
-              Không có ca bệnh khớp bộ lọc hiện tại
+              {t("empty.title")}
             </p>
-            <p className="text-xs text-stone-500 mt-1">Đổi trạng thái hoặc chuyên khoa để xem ca khác.</p>
+            <p className="text-xs text-stone-500 mt-1">{t("empty.hint")}</p>
           </div>
         ) : (
           items.map((item) => (

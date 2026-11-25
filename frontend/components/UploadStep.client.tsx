@@ -166,7 +166,7 @@ export function UploadStep() {
         >
           {isSubmitting && <Loader2 size={16} className="animate-spin" />}
           {hasPendingDiagnosis
-            ? "Đang chờ kết quả chẩn đoán..."
+            ? t("actions.waitingResult")
             : step === 0
               ? t("actions.next")
               : isSubmitting
@@ -186,7 +186,7 @@ function QuotaNotice({ quota }: { quota: QuotaState & { known: boolean } }) {
     return (
       <p role="alert" className="flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
         <AlertTriangle size={16} className="mt-0.5 shrink-0" />
-        <span>{BLOCKED_MESSAGE}</span>
+        <span>{blockedMessage(t)}</span>
       </p>
     );
   }
@@ -195,7 +195,7 @@ function QuotaNotice({ quota }: { quota: QuotaState & { known: boolean } }) {
     return (
       <p role="status" className="flex items-start gap-2 rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900">
         <AlertTriangle size={16} className="mt-0.5 shrink-0" />
-        <span>{describeEviction(quota.eviction)}</span>
+        <span>{describeEviction(quota.eviction, t)}</span>
       </p>
     );
   }
