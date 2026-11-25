@@ -22,6 +22,7 @@ const EMPTY_HISTORY: PatientHistoryItem[] = [];
 
 export function AppointmentsWorkspace() {
   const t = useTranslations("AppointmentsWorkspace");
+  const tErrors = useTranslations("Common.errors");
   const user = useAuthStore((s) => s.user);
   const { data, isLoading, error, refetch, isFetching } = usePatientHistoryQuery();
   const history = data?.items ?? EMPTY_HISTORY;
@@ -101,11 +102,11 @@ export function AppointmentsWorkspace() {
         {isLoading ? (
           <div className="bg-white rounded-3xl p-12 text-center border border-stone-200/80 shadow-xs">
             <Loader2 className="w-8 h-8 mx-auto animate-spin text-amber-600 mb-3" />
-            <p className="text-sm font-semibold text-stone-600">Đang tải hồ sơ bệnh án...</p>
+            <p className="text-sm font-semibold text-stone-600">{t("loading")}</p>
           </div>
         ) : error ? (
           <div role="alert" className="bg-red-50 border border-red-200 rounded-2xl p-5 text-sm text-red-800 flex items-center justify-between gap-3">
-            <span>{errMsg(error)}</span>
+            <span>{errMsg(error, tErrors("generic"), tErrors)}</span>
             <button
               type="button"
               onClick={() => refetch()}
@@ -113,15 +114,15 @@ export function AppointmentsWorkspace() {
               className="inline-flex items-center gap-1.5 text-xs font-bold underline-offset-2 hover:underline cursor-pointer"
             >
               <RefreshCw className={`w-3.5 h-3.5 ${isFetching ? "animate-spin" : ""}`} />
-              Thử lại
+              {t("retry")}
             </button>
           </div>
         ) : history.length === 0 ? (
           <div className="bg-white rounded-3xl p-10 text-center border border-stone-200/80 shadow-xs space-y-3">
             <CheckCircle2 className="w-12 h-12 mx-auto text-emerald-500" />
-            <h3 className="text-base font-bold text-stone-800">Chưa có lịch sử khám nào</h3>
+            <h3 className="text-base font-bold text-stone-800">{t("empty.title")}</h3>
             <p className="text-xs text-stone-500 max-w-md mx-auto">
-              Bạn chưa có lượt sàng lọc hoặc gửi ảnh chẩn đoán nào. Hãy thực hiện tầm soát đầu tiên bằng công nghệ AI ngay hôm nay.
+              {t("empty.body")}
             </p>
             <div className="pt-2">
               <Link href={APP_ROUTES.PATIENT} className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-stone-900 text-white text-xs font-bold hover:bg-stone-800">
@@ -141,6 +142,9 @@ export function AppointmentsWorkspace() {
 }
 
 function CaseCard({ item, statusMeta, eviction }: { item: PatientHistoryItem; statusMeta: Record<CaseStatus, { label: string; className: string }>; eviction: QuotaState["eviction"] }) {
+  const t = useTranslations("AppointmentsWorkspace");
+  const tAi = useTranslations("Common.ai");
+  const tErrors = useTranslations("Common.errors");
   const confirmReferral = useConfirmReferralMutation();
   const [armed, setArmed] = useState(false);
   const meta = statusMeta[item.status];
@@ -155,7 +159,10 @@ function CaseCard({ item, statusMeta, eviction }: { item: PatientHistoryItem; st
           </div>
           <div>
             <h4 className="font-bold text-stone-900 text-sm">
-              Đợt khám {item.specialtyName ?? "sàng lọc"} #{item.id.slice(0, 8)}
+              {t("case.title", {
+                specialty: item.specialtyName ?? t("case.defaultSpecialty"),
+                id: item.id.slice(0, 8),
+              })}
             </h4>
             <p className="text-xs text-stone-400 flex items-center gap-1 mt-0.5">
               <Clock className="w-3.5 h-3.5" />
@@ -169,57 +176,64 @@ function CaseCard({ item, statusMeta, eviction }: { item: PatientHistoryItem; st
       {item.status === "pending" || !item.review ? (
         <div className="p-3 rounded-xl bg-amber-50/60 border border-amber-100 text-xs text-amber-800 flex items-center gap-2">
           <ShieldCheck className="w-4 h-4 text-amber-600 shrink-0" />
-          <span>Dữ liệu và ảnh chẩn đoán đang được chuyên gia y tế thẩm định.</span>
+          <span>{t("pendingNotice")}</span>
         </div>
       ) : (
         <div className="p-3.5 rounded-xl bg-stone-50 border border-stone-100 text-xs text-stone-700 space-y-1">
           <p className="font-bold text-stone-900 flex items-center gap-1.5">
             <Stethoscope className="w-3.5 h-3.5 text-cyan-700" />
             <span>
-              Ý kiến chuyên môn{item.review.doctorName ? ` của ${item.review.doctorName}` : ""}
-              {item.review.hospital ? ` (${item.review.hospital})` : ""}
+              {t("review.title")}
+              {item.review.doctorName ? ` ${t("review.byDoctor", { doctor: item.review.doctorName })}` : ""}
+              {item.review.hospital ? ` ${t("review.atHospital", { hospital: item.review.hospital })}` : ""}
             </span>
           </p>
           <p className="leading-relaxed pl-5 whitespace-pre-line">{item.review.notes}</p>
-          <p className="pl-5 text-[11px] text-stone-400">Kết luận lúc {fmtDateTime(item.review.reviewedAt)}</p>
+          <p className="pl-5 text-[11px] text-stone-400">
+            {t("review.concludedAt", { date: fmtDateTime(item.review.reviewedAt) })}
+          </p>
         </div>
       )}
 
       {item.results.length > 0 && (
         <div className="space-y-2">
-          <p className="text-xs font-bold text-stone-800">Kết quả hỗ trợ từ AI</p>
+          <p className="text-xs font-bold text-stone-800">{t("ai.title")}</p>
           <div className="grid gap-3 sm:grid-cols-2">
             {item.results.map((result, index) => (
               <div key={`${item.id}-result-${index}`} className="flex gap-3 rounded-xl border border-stone-100 bg-stone-50 p-3">
                 <a href={result.imageUrl} target="_blank" rel="noreferrer" className="shrink-0">
-                  <img src={result.gradcamUrl ?? result.imageUrl} alt={result.gradcamUrl ? "Ảnh Grad-CAM" : "Ảnh đã gửi"} className="h-20 w-20 rounded-lg object-cover" />
+                  <img
+                    src={result.gradcamUrl ?? result.imageUrl}
+                    alt={result.gradcamUrl ? t("ai.gradcamAlt") : t("ai.imageAlt")}
+                    className="h-20 w-20 rounded-lg object-cover"
+                  />
                 </a>
                 <div className="text-xs text-stone-600">
                   {result.status === "completed" ? (
                     <>
-                      <p className="font-semibold text-stone-900">{formatAiLabel(result.predictedLabel)}</p>
-                      {result.riskScore !== null && <p>Điểm mô hình: {result.riskScore.toFixed(1)}%</p>}
-                      {result.gradcamUrl && <a href={result.gradcamUrl} target="_blank" rel="noreferrer" className="text-cyan-800 underline">Xem vùng AI chú ý</a>}
+                      <p className="font-semibold text-stone-900">{formatAiLabel(result.predictedLabel, tAi)}</p>
+                      {result.riskScore !== null && <p>{t("ai.modelScore", { score: result.riskScore.toFixed(1) })}</p>}
+                      {result.gradcamUrl && <a href={result.gradcamUrl} target="_blank" rel="noreferrer" className="text-cyan-800 underline">{t("ai.viewArea")}</a>}
                     </>
                   ) : (
                     <div className="flex items-center gap-1.5 font-medium">
                       {result.status === "failed" ? (
-                        <p className="text-red-600">Phân tích ảnh thất bại</p>
+                        <p className="text-red-600">{t("ai.failed")}</p>
                       ) : (
                         <p className="flex items-center gap-1.5 text-amber-700">
                           <Loader2 className="w-3 h-3 animate-spin" />
                           <span>
                             {result.status === "pending"
-                              ? "Đang trong hàng đợi gửi..."
+                              ? t("ai.queued")
                               : result.status === "dispatched"
-                                ? "AI đang xử lý ảnh..."
-                                : "Đang phân tích ảnh..."}
+                                ? t("ai.dispatched")
+                                : t("ai.processing")}
                           </span>
                         </p>
                       )}
                     </div>
                   )}
-                  <p className="mt-1 text-[10px] text-stone-400">Điểm model không phải xác suất mắc bệnh; bác sĩ cần tự đánh giá và kết luận.</p>
+                  <p className="mt-1 text-[10px] text-stone-400">{t("ai.disclaimer")}</p>
                 </div>
               </div>
             ))}
@@ -231,7 +245,7 @@ function CaseCard({ item, statusMeta, eviction }: { item: PatientHistoryItem; st
         (appt ? (
           <div className="p-3 rounded-xl bg-cyan-50/60 border border-cyan-100 text-xs text-cyan-900 flex items-center gap-2">
             <CalendarCheck className="w-4 h-4 shrink-0" />
-            <span>Lịch tái khám: {fmtDateTime(appt.scheduledAt)}</span>
+            <span>{t("followUp", { date: fmtDateTime(appt.scheduledAt) })}</span>
           </div>
         ) : (
           <BookAppointment caseId={item.id} />
@@ -241,18 +255,22 @@ function CaseCard({ item, statusMeta, eviction }: { item: PatientHistoryItem; st
         <div className="p-3.5 rounded-xl bg-rose-50/60 border border-rose-100 text-xs text-rose-900 space-y-2">
           <p className="font-bold flex items-center gap-1.5">
             <Share2 className="w-3.5 h-3.5" />
-            <span>{item.referral?.targetLabel ? `Chuyển tuyến tới: ${item.referral.targetLabel}` : "Hồ sơ đã được chuyển tuyến"}</span>
+            <span>
+              {item.referral?.targetLabel
+                ? t("referral.to", { target: item.referral.targetLabel })
+                : t("referral.default")}
+            </span>
           </p>
           {item.referral?.reason && <p className="pl-5 leading-relaxed">{item.referral.reason}</p>}
           {!armed ? (
             <button type="button" onClick={() => setArmed(true)} className="ml-5 mt-1 px-3 py-1.5 rounded-lg bg-rose-700 text-white font-bold hover:bg-rose-800 cursor-pointer">
-              Xác nhận chuyển tuyến
+              {t("referral.confirm")}
             </button>
           ) : (
             <div className="ml-5 mt-1 space-y-2">
               <p className="flex items-start gap-1.5 font-semibold">
                 <AlertTriangle className="w-3.5 h-3.5 mt-0.5 shrink-0" />
-                Sau khi xác nhận, hồ sơ này sẽ bị xóa khỏi hệ thống và không thể khôi phục. Hãy lưu lại thông tin chuyển tuyến trước.
+                {t("referral.warning")}
               </p>
               <div className="flex gap-2">
                 <button
@@ -262,17 +280,19 @@ function CaseCard({ item, statusMeta, eviction }: { item: PatientHistoryItem; st
                   className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-rose-700 text-white font-bold hover:bg-rose-800 disabled:opacity-60 cursor-pointer"
                 >
                   {confirmReferral.isPending && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-                  Đồng ý xác nhận
+                  {t("referral.agree")}
                 </button>
                 <button type="button" disabled={confirmReferral.isPending} onClick={() => setArmed(false)} className="px-3 py-1.5 rounded-lg border border-rose-200 bg-white font-bold cursor-pointer">
-                  Hủy
+                  {t("referral.cancel")}
                 </button>
               </div>
             </div>
           )}
 
           {confirmReferral.isError && (
-            <p role="alert" className="ml-5 text-red-700 font-semibold">{errMsg(confirmReferral.error)}</p>
+            <p role="alert" className="ml-5 text-red-700 font-semibold">
+              {errMsg(confirmReferral.error, tErrors("generic"), tErrors)}
+            </p>
           )}
         </div>
       )}
@@ -280,9 +300,7 @@ function CaseCard({ item, statusMeta, eviction }: { item: PatientHistoryItem; st
       {eviction && (
         <p className="text-[11px] font-semibold text-stone-500 flex items-center gap-1.5">
           <AlertTriangle className="w-3.5 h-3.5 text-amber-600" />
-          {eviction.reason === "reviewed"
-            ? "Hồ sơ này sẽ tự động bị xóa khi bạn gửi hồ sơ mới."
-            : "Hồ sơ này sẽ bị thay thế khi bạn gửi hồ sơ mới."}
+          {eviction.reason === "reviewed" ? t("eviction.reviewed") : t("eviction.pending")}
         </p>
       )}
     </article>

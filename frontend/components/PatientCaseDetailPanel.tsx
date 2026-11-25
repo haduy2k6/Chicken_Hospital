@@ -129,7 +129,7 @@ export function PatientCaseDetailPanel({
           <button
             type="button"
             onClick={onClose}
-            aria-label="Đóng hồ sơ"
+            aria-label={t("closeCase")}
             className="p-1.5 rounded-full hover:bg-stone-100 text-stone-400 hover:text-stone-700 cursor-pointer"
           >
             <X className="w-4 h-4" />
@@ -245,12 +245,12 @@ export function PatientCaseDetailPanel({
                         key={img.id}
                         type="button"
                         onClick={() => openPreview(img)}
-                        aria-label={`Phóng to ảnh ${idx + 1}`}
+                        aria-label={t("images.zoom", { index: idx + 1 })}
                         className="group relative aspect-square rounded-xl overflow-hidden border border-stone-200 bg-stone-100 cursor-pointer"
                       >
                         <img
                           src={img.thumbUrl ?? img.url}
-                          alt={`Ảnh hồ sơ ${idx + 1}`}
+                          alt={t("images.alt", { index: idx + 1 })}
                           loading="lazy"
                           decoding="async"
                           className="w-full h-full object-cover group-hover:scale-105 transition-transform"
@@ -364,7 +364,7 @@ export function PatientCaseDetailPanel({
                     className="w-full px-3 py-2 rounded-xl border border-emerald-300 bg-white text-xs sm:text-sm text-stone-900 focus:outline-none focus:ring-2 focus:ring-emerald-600"
                   />
                   <p className="text-[11px] text-emerald-700">
-                    Lịch hẹn sẽ hiện trong hồ sơ theo dõi của bệnh nhân.
+                    {t("followUp.hint")}
                   </p>
                 </div>
               )}
@@ -372,7 +372,7 @@ export function PatientCaseDetailPanel({
               {isEscalated && (
                 <div className="p-3.5 rounded-2xl bg-rose-50 border border-rose-200 space-y-2">
                   <label htmlFor="referral-target" className="block text-xs font-bold text-rose-900">
-                    Chuyển đến bác sĩ hoặc khoa
+                    {t("referral.label")}
                   </label>
                   <select
                     id="referral-target"
@@ -380,7 +380,7 @@ export function PatientCaseDetailPanel({
                     onChange={(e) => onPickReceiver(e.target.value)}
                     className="w-full px-3 py-2 rounded-xl border border-rose-300 bg-white text-xs sm:text-sm text-stone-900 focus:outline-none focus:ring-2 focus:ring-rose-600"
                   >
-                    <option value="">Chọn người nhận...</option>
+                    <option value="">{t("referral.placeholder")}</option>
                     {referralTargets.map((t) => (
                       <option key={`${t.kind}:${t.id}`} value={`${t.kind}:${t.id}`}>
                         {t.label}
@@ -389,7 +389,7 @@ export function PatientCaseDetailPanel({
                   </select>
                   {referralTargets.length === 0 && (
                     <p className="text-[11px] text-rose-700">
-                      Chưa tải được danh sách người nhận, không thể chuyển tuyến lúc này.
+                      {t("referral.unavailable")}
                     </p>
                   )}
                 </div>
@@ -405,7 +405,7 @@ export function PatientCaseDetailPanel({
                 ) : (
                   <Send className="w-4 h-4" />
                 )}
-                <span>{isEscalated ? "Gửi chuyển tuyến" : "Lưu kết luận"}</span>
+                <span>{isEscalated ? t("submit.escalate") : t("submit.review")}</span>
               </button>
             </form>
             )}
@@ -417,7 +417,7 @@ export function PatientCaseDetailPanel({
         <div
           role="dialog"
           aria-modal="true"
-          aria-label="Xem ảnh phóng to"
+          aria-label={t("preview.label")}
           onClick={() => setPreview(null)}
           className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4"
         >
@@ -428,7 +428,7 @@ export function PatientCaseDetailPanel({
             <button
               type="button"
               onClick={() => setPreview(null)}
-              aria-label="Đóng"
+              aria-label={t("preview.close")}
               className="absolute top-3 right-3 p-2 rounded-full bg-black/60 text-white hover:bg-black cursor-pointer"
             >
               <X className="w-5 h-5" />
@@ -436,7 +436,7 @@ export function PatientCaseDetailPanel({
 
             <img
               src={showGradcam && preview.analysis?.gradcamUrl ? preview.analysis.gradcamUrl : preview.url}
-              alt={showGradcam ? "Bản đồ nhiệt Grad-CAM" : "Ảnh nội soi phóng to"}
+              alt={showGradcam ? t("preview.gradcamAlt") : t("preview.imageAlt")}
               className="max-h-[72vh] w-auto mx-auto object-contain"
             />
 
@@ -444,14 +444,14 @@ export function PatientCaseDetailPanel({
               <div className="px-4 py-3 bg-stone-800 text-xs text-stone-100 flex flex-wrap items-center justify-between gap-3">
                 <div className="space-y-0.5">
                   <p className="font-bold">
-                    {formatAiLabel(preview.analysis.predictedLabel)}
+                    {formatAiLabel(preview.analysis.predictedLabel, tAi)}
                   </p>
                   <p className="text-stone-300">
                     {preview.analysis.status === "completed" && preview.analysis.riskScore !== null
-                      ? `Điểm model (không phải xác suất bệnh): ${Math.round(preview.analysis.riskScore * 10) / 10}%`
+                      ? t("preview.score", { score: Math.round(preview.analysis.riskScore * 10) / 10 })
                       : preview.analysis.status === "failed"
-                        ? "AI phân tích ảnh này bị lỗi"
-                        : "AI đang phân tích ảnh này"}
+                        ? t("preview.analysisFailed")
+                        : t("preview.processing")}
                   </p>
                 </div>
                 {preview.analysis.gradcamUrl && (
@@ -461,7 +461,7 @@ export function PatientCaseDetailPanel({
                     aria-pressed={showGradcam}
                     className="px-3 py-1.5 rounded-lg bg-stone-700 hover:bg-stone-600 font-bold cursor-pointer"
                   >
-                    {showGradcam ? "Xem ảnh gốc" : "Xem vùng AI chú ý (Grad-CAM)"}
+                    {showGradcam ? t("preview.original") : t("preview.gradcam")}
                   </button>
                 )}
               </div>

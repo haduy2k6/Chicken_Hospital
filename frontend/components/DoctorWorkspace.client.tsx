@@ -153,7 +153,7 @@ export function DoctorWorkspace() {
             <CheckCircle2 className="w-4 h-4 text-emerald-600" />
             <span>{successToast}</span>
           </div>
-          <button type="button" onClick={() => setSuccessToast(null)} aria-label="Đóng thông báo" className="cursor-pointer">
+          <button type="button" onClick={() => setSuccessToast(null)} aria-label={t("closeToast")} className="cursor-pointer">
             <X className="w-4 h-4 text-emerald-700" />
           </button>
         </div>

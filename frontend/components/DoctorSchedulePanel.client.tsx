@@ -15,6 +15,7 @@ const keyOf = (date: string, s: WorkSession) => `${date}|${s}`;
 /** Bác sĩ chọn buổi làm việc theo tuần (không chọn = nghỉ) và xem lịch hẹn sắp tới */
 export function DoctorSchedulePanel() {
   const t = useTranslations("DoctorSchedule");
+  const tErrors = useTranslations("Common.errors");
   const sessions = useMemo<{ id: WorkSession; label: string }[]>(
     () => [
       { id: "morning", label: t("morning") },
@@ -118,7 +119,7 @@ export function DoctorSchedulePanel() {
           </button>
           {save.isSuccess && <span role="status" className="text-xs font-semibold text-emerald-700">{t("saved")}</span>}
         </div>
-        {save.isError && <p role="alert" className="text-xs font-semibold text-red-700">{errMsg(save.error)}</p>}
+        {save.isError && <p role="alert" className="text-xs font-semibold text-red-700">{errMsg(save.error, tErrors("generic"), tErrors)}</p>}
       </section>
 
       <section className="bg-white p-5 rounded-3xl border border-stone-200/80 shadow-xs space-y-3" aria-label={t("upcomingAppointments")}>
@@ -129,7 +130,7 @@ export function DoctorSchedulePanel() {
         {appointments.isLoading ? (
           <Loader2 className="w-5 h-5 animate-spin text-cyan-600" />
         ) : appointments.error ? (
-          <p role="alert" className="text-xs text-red-700 font-semibold">{errMsg(appointments.error)}</p>
+          <p role="alert" className="text-xs text-red-700 font-semibold">{errMsg(appointments.error, tErrors("generic"), tErrors)}</p>
         ) : !appointments.data?.length ? (
           <p className="text-xs text-stone-500">{t("noAppointments")}</p>
         ) : (

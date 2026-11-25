@@ -10,6 +10,7 @@ import type { WorkSession } from "@/src/features/schedule/schedule.service";
 
 export function BookAppointment({ caseId }: { caseId: string }) {
   const t = useTranslations("BookAppointment");
+  const tErrors = useTranslations("Common.errors");
   const today = vnToday();
   const [open, setOpen] = useState(false);
   const [date, setDate] = useState(today);
@@ -59,7 +60,7 @@ export function BookAppointment({ caseId }: { caseId: string }) {
       {doctors.isLoading ? (
         <p className="flex items-center gap-2"><Loader2 className="w-3.5 h-3.5 animate-spin" />{t("searching")}</p>
       ) : doctors.error ? (
-        <p role="alert" className="text-red-700 font-semibold">{errMsg(doctors.error)}</p>
+        <p role="alert" className="text-red-700 font-semibold">{errMsg(doctors.error, tErrors("generic"), tErrors)}</p>
       ) : !doctors.data?.length ? (
         <p>{t("noAvailable")}</p>
       ) : (
@@ -88,7 +89,7 @@ export function BookAppointment({ caseId }: { caseId: string }) {
         </ul>
       )}
 
-      {book.isError && <p role="alert" className="text-red-700 font-semibold">{errMsg(book.error)}</p>}
+      {book.isError && <p role="alert" className="text-red-700 font-semibold">{errMsg(book.error, tErrors("generic"), tErrors)}</p>}
     </div>
   );
 }

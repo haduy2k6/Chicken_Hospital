@@ -380,6 +380,48 @@
       "pending": "Awaiting Doctor",
       "reviewed": "Reviewed",
       "escalated": "Specialist Visit Needed"
+    },
+    "loading": "Loading medical records...",
+    "retry": "Try again",
+    "empty": {
+      "title": "No medical history yet",
+      "body": "You have not submitted any screening or diagnostic images yet. Start your first AI screening today."
+    },
+    "case": {
+      "title": "{specialty} visit #{id}",
+      "defaultSpecialty": "screening"
+    },
+    "pendingNotice": "Your data and diagnostic images are being reviewed by a medical specialist.",
+    "review": {
+      "title": "Specialist opinion",
+      "byDoctor": "by {doctor}",
+      "atHospital": "({hospital})",
+      "concludedAt": "Concluded at {date}"
+    },
+    "ai": {
+      "title": "AI-assisted results",
+      "modelScore": "Model score: {score}%",
+      "viewArea": "View AI focus area",
+      "failed": "Image analysis failed",
+      "queued": "Queued for submission...",
+      "dispatched": "AI is processing the image...",
+      "processing": "Analysing the image...",
+      "disclaimer": "The model score is not the probability of disease; the doctor must assess and conclude independently.",
+      "gradcamAlt": "Grad-CAM image",
+      "imageAlt": "Submitted image"
+    },
+    "followUp": "Follow-up appointment: {date}",
+    "referral": {
+      "to": "Referred to: {target}",
+      "default": "This case has been referred",
+      "confirm": "Confirm referral",
+      "warning": "Once confirmed, this case will be deleted from the system and cannot be restored. Please save the referral details first.",
+      "agree": "Yes, confirm",
+      "cancel": "Cancel"
+    },
+    "eviction": {
+      "reviewed": "This case will be deleted automatically when you submit a new case.",
+      "pending": "This case will be replaced when you submit a new case."
     }
   },
   "BookAppointment": {
@@ -400,7 +442,7 @@
       }
     },
     "ai": {
-      "malignant": "The model flagged signals that need a doctor's review",
+      "malignant": "The model flagged signals requiring review by a doctor",
       "benign": "No signal detected by the model; disease cannot be ruled out",
       "unknown": "Model output available"
     }
@@ -448,6 +490,7 @@
     "noPending": "No cases awaiting review",
     "loading": "Loading...",
     "refresh": "Refresh list",
+    "closeToast": "Dismiss notification",
     "toast": {
       "escalated": "Case #{caseId} was referred. It is no longer in your list.",
       "reviewed": "Review saved for case #{caseId}."
@@ -462,6 +505,7 @@
     "title": "Case File & Clinical Review",
     "newerVersion": "This case was just updated elsewhere. The information below may be out of date.",
     "acceptNewVersion": "Understood, use the latest version",
+    "closeCase": "Close case file",
     "patientLabel": "Patient:",
     "aiSummary": "Overall AI analysis:",
     "retry": "Reload case",
@@ -476,7 +520,9 @@
       "analysisFailed": "AI error",
       "processing": "Analysing",
       "empty": "No images or documents attached to this case",
-      "modelScore": "Model {score}%"
+      "modelScore": "Model {score}%",
+      "zoom": "Enlarge image {index}",
+      "alt": "Case image {index}"
     },
     "processedNotice": "This case has already been processed. You can review it but cannot submit another conclusion.",
     "notes": {
@@ -490,7 +536,7 @@
     },
     "followUp": {
       "label": "Schedule an in-person or follow-up visit (optional)",
-      "hint": "The appointment will appear in the patient's records."
+      "hint": "The appointment will appear in the patient records."
     },
     "referral": {
       "label": "Refer to doctor or department",
@@ -506,7 +552,11 @@
       "analysisFailed": "AI failed to analyse this image",
       "processing": "AI is analysing this image",
       "gradcam": "View AI focus area (Grad-CAM)",
-      "original": "View original image"
+      "original": "View original image",
+      "label": "Enlarged image view",
+      "close": "Close",
+      "gradcamAlt": "Grad-CAM heat map",
+      "imageAlt": "Enlarged endoscopy image"
     },
     "errors": {
       "invalidDate": "Invalid appointment date",
@@ -538,7 +588,7 @@
     "result": {
       "title": "Kidney filtration assessment result",
       "unit": "mL/min/1.73m²",
-      "disclaimer": "* This result supports screening only. Submit your case for a nephrologist's assessment.",
+      "disclaimer": "* This result supports screening only. Submit your case for a nephrologist assessment.",
       "viewRecords": "View my records"
     },
     "send": "Send case to nephrologist",

@@ -112,7 +112,7 @@ export class AiAnalysisService {
     this.circuitBaseMs = num('AI_CIRCUIT_BASE_OPEN_MS', 60_000);
     this.circuitMaxMs = num('AI_CIRCUIT_MAX_OPEN_MS', 600_000);
     this.healthTimeoutMs = num('AI_HEALTH_TIMEOUT_MS', 10_000);
-    this.lockTtlSec = Math.ceil(num('AI_DISPATCH_LOCK_TTL_SEC', 300_000) / 1000);
+    this.lockTtlSec = Math.max(1, Math.ceil(num('AI_DISPATCH_LOCK_TTL_SEC', 300)));
     this.releaseLockScript = this.redis.createScript<number>(
       "if redis.call('get', KEYS[1]) == ARGV[1] then return redis.call('del', KEYS[1]) else return 0 end",
     );
@@ -136,7 +136,6 @@ export class AiAnalysisService {
       return null;
     }
   }
-
   /** Redis lỗi thì không dispatch: cron sẽ thử lại, tránh N instance cùng gửi job. */
   private async acquireLock(key: string): Promise<string | null> {
     try {
@@ -183,7 +182,6 @@ export class AiAnalysisService {
       /* Bỏ qua lỗi Redis */
     }
   }
-
   // ------------------------------------------------------------ Circuit Breaker
 
   private async isCircuitOpen(): Promise<boolean> {

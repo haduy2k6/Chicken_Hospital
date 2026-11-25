@@ -356,6 +356,48 @@
       "pending": "Đang chờ bác sĩ",
       "reviewed": "Đã có kết luận",
       "escalated": "Cần khám chuyên khoa"
+    },
+    "loading": "Đang tải hồ sơ bệnh án...",
+    "retry": "Thử lại",
+    "empty": {
+      "title": "Chưa có lịch sử khám nào",
+      "body": "Bạn chưa có lượt sàng lọc hoặc gửi ảnh chẩn đoán nào. Hãy thực hiện tầm soát đầu tiên bằng công nghệ AI ngay hôm nay."
+    },
+    "case": {
+      "title": "Đợt khám {specialty} #{id}",
+      "defaultSpecialty": "sàng lọc"
+    },
+    "pendingNotice": "Dữ liệu và ảnh chẩn đoán đang được chuyên gia y tế thẩm định.",
+    "review": {
+      "title": "Ý kiến chuyên môn",
+      "byDoctor": "của {doctor}",
+      "atHospital": "({hospital})",
+      "concludedAt": "Kết luận lúc {date}"
+    },
+    "ai": {
+      "title": "Kết quả hỗ trợ từ AI",
+      "modelScore": "Điểm mô hình: {score}%",
+      "viewArea": "Xem vùng AI chú ý",
+      "failed": "Phân tích ảnh thất bại",
+      "queued": "Đang trong hàng đợi gửi...",
+      "dispatched": "AI đang xử lý ảnh...",
+      "processing": "Đang phân tích ảnh...",
+      "disclaimer": "Điểm model không phải xác suất mắc bệnh; bác sĩ cần tự đánh giá và kết luận.",
+      "gradcamAlt": "Ảnh Grad-CAM",
+      "imageAlt": "Ảnh đã gửi"
+    },
+    "followUp": "Lịch tái khám: {date}",
+    "referral": {
+      "to": "Chuyển tuyến tới: {target}",
+      "default": "Hồ sơ đã được chuyển tuyến",
+      "confirm": "Xác nhận chuyển tuyến",
+      "warning": "Sau khi xác nhận, hồ sơ này sẽ bị xóa khỏi hệ thống và không thể khôi phục. Hãy lưu lại thông tin chuyển tuyến trước.",
+      "agree": "Đồng ý xác nhận",
+      "cancel": "Hủy"
+    },
+    "eviction": {
+      "reviewed": "Hồ sơ này sẽ tự động bị xóa khi bạn gửi hồ sơ mới.",
+      "pending": "Hồ sơ này sẽ bị thay thế khi bạn gửi hồ sơ mới."
     }
   },
   "BookAppointment": {
@@ -424,6 +466,7 @@
     "noPending": "Không còn ca nào chờ đánh giá",
     "loading": "Đang tải...",
     "refresh": "Làm mới danh sách",
+    "closeToast": "Đóng thông báo",
     "toast": {
       "escalated": "Đã chuyển tuyến ca #{caseId}. Ca không còn trong danh sách của bạn.",
       "reviewed": "Đã lưu kết luận cho ca #{caseId}."
@@ -438,6 +481,7 @@
     "title": "Hồ sơ và đánh giá chuyên môn",
     "newerVersion": "Ca này vừa được cập nhật ở nơi khác. Nội dung bên dưới có thể đã đổi.",
     "acceptNewVersion": "Đã xem, dùng bản mới nhất",
+    "closeCase": "Đóng hồ sơ",
     "patientLabel": "Bệnh nhân:",
     "aiSummary": "Phân tích AI tổng hợp:",
     "retry": "Tải lại hồ sơ",
@@ -452,7 +496,9 @@
       "analysisFailed": "AI lỗi",
       "processing": "Đang phân tích",
       "empty": "Ca này không có ảnh hoặc tài liệu đính kèm",
-      "modelScore": "Model {score}%"
+      "modelScore": "Model {score}%",
+      "zoom": "Phóng to ảnh {index}",
+      "alt": "Ảnh hồ sơ {index}"
     },
     "processedNotice": "Ca này đã được xử lý, chỉ xem lại nội dung, không thể kết luận lần nữa.",
     "notes": {
@@ -482,7 +528,11 @@
       "analysisFailed": "AI phân tích ảnh này bị lỗi",
       "processing": "AI đang phân tích ảnh này",
       "gradcam": "Xem vùng AI chú ý (Grad-CAM)",
-      "original": "Xem ảnh gốc"
+      "original": "Xem ảnh gốc",
+      "label": "Xem ảnh phóng to",
+      "close": "Đóng",
+      "gradcamAlt": "Bản đồ nhiệt Grad-CAM",
+      "imageAlt": "Ảnh nội soi phóng to"
     },
     "errors": {
       "invalidDate": "Ngày hẹn không hợp lệ",

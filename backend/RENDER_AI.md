@@ -27,6 +27,8 @@ AI_MAX_RETRY=2
 AI_FAIL_AFTER_MS=2700000
 AI_CIRCUIT_BASE_OPEN_MS=60000
 AI_CIRCUIT_MAX_OPEN_MS=600000
+AI_HEALTH_TIMEOUT_MS=10000
+AI_DISPATCH_LOCK_TTL_SEC=300
 ```
 
 `<AI-INTERNAL-HOST>` is the Internal Address shown by Render for the private AI service. Do not use `localhost:8000` on Render.
@@ -45,7 +47,7 @@ AI_SERVICE_KEY=<same value as NestJS>
 AI_CALLBACK_SECRET=<same value as NestJS>
 ```
 
-`<NEST-INTERNAL-HOST>` is the NestJS service's Internal Address in Render. Keep both services in the same region. S3 values and Hugging Face model variables also belong on the AI service, as listed in `ai-service/render.yaml`.
+`<NEST-INTERNAL-HOST>` is the NestJS service's Internal Address in Render (a public origin also works). Keep both services in the same region. Do not add a trailing slash after `/result`. `AI_CALLBACK_URL` belongs on the **AI service**; NestJS only reads `AI_SERVICE_URL`, `AI_SERVICE_KEY` and `AI_CALLBACK_SECRET`. S3 values and Hugging Face model variables also belong on the AI service, as listed in `ai-service/render.yaml`.
 
 ## Local development
 
